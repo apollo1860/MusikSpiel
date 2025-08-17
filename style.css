@@ -1,0 +1,52 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: #111;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+#controls {
+  margin: 20px 0;
+}
+
+button {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  margin: 5px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+button:active {
+  background: #555;
+}
+
+.card {
+  width: 200px;
+  height: 100px;
+  margin: 20px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #444;
+  border-radius: 10px;
+  font-size: 22px;
+  cursor: pointer;
+  transition: transform 0.4s;
+}
+.card.flipped {
+  background: #222;
+  transform: rotateY(180deg);
+}

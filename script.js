@@ -1,4 +1,4 @@
-// --- Rickroll vorbereiten ---
+// --- Rickroll vorbereiten --- 
 const rickRoll = new Audio('assets/mp3/rickroll.mp3');
 rickRoll.volume = 0.6; // etwas leiser als der Hauptsong
 
@@ -38,6 +38,17 @@ playBtn.addEventListener("click", () => {
   currentSong = getRandomSong();
   currentAudio = new Audio(currentSong.src);
   currentAudio.play();
+});
+
+// --- Pause Button ---
+pauseBtn.addEventListener("click", () => {
+  if (currentAudio && !currentAudio.paused) {
+    // wenn Song läuft -> pausieren
+    currentAudio.pause();
+  } else if (currentAudio && currentAudio.paused) {
+    // wenn Song pausiert -> weiter abspielen
+    currentAudio.play();
+  }
 });
 
 // --- Reveal Card ---

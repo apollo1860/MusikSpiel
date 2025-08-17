@@ -5,8 +5,6 @@
   --text:#e5e7eb;
   --accent:#22d3ee;
   --good:#22c55e;
-  --bad:#ef4444;
-  --warn:#f59e0b;
   --radius:18px;
 }
 
@@ -19,7 +17,6 @@ body{
   color:var(--text);
 }
 
-/* Generic */
 .hidden{display:none !important}
 .pill{
   background:#0b1220; border:1px solid #253046;
@@ -43,6 +40,23 @@ body{
 }
 #addPlayer{background:#202a3b; color:var(--text); border:1px solid #2b3548}
 #startGame{background:var(--good); color:#031b0b}
+
+/* Decade Overlay */
+#decadeOverlay{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.6); z-index:9999;
+}
+#decadeText{
+  font-size:11vw; line-height:1; font-weight:1000; color:#fff; letter-spacing:2px;
+  animation: popFade 1.6s ease both;
+  text-shadow: 0 6px 18px rgba(0,0,0,.6);
+}
+@keyframes popFade{
+  0%{ opacity:0; transform:scale(.9)}
+  15%{ opacity:1; transform:scale(1)}
+  85%{ opacity:1; transform:scale(1)}
+  100%{ opacity:0; transform:scale(1.06)}
+}
 
 /* Handoff Slide */
 #handoff{

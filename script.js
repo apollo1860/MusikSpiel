@@ -92,12 +92,12 @@ if (decades.length === 0) decades.push({key:'local', label:'Songs', list: []}); 
 // Chips / Effekte
 // ------------------------
 const CHIPS = [
-  { id:'first10',  label:'Erste 10s',   sub:'×2 Punkte',        score:{mult:2}, type:'segment', start:'first', duration:10 },
-  { id:'last10',   label:'Letzte 10s',  sub:'×2 Punkte',        score:{mult:2}, type:'segment', start:'last',  duration:10 },
+  { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte',        score:{add:2}, type:'segment', start:'first', duration:10 },
+  { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte',        score:{add:3}, type:'segment', start:'last',  duration:10 },
   { id:'random10', label:'Random 10s',  sub:'+2 Punkte',        score:{add:2},  type:'segment', start:'random',duration:10 },
-  { id:'rickroll', label:'Rick Roll',   sub:'parallel, ×2',     score:{mult:2}, type:'overlay', duration:10 },
-  { id:'double',   label:'2× Speed',    sub:'+1 Punkt',         score:{add:1},  type:'speed',   rate:2 },
-  { id:'first20',  label:'Erste 20s',   sub:'+2 Punkte',        score:{add:2},  type:'segment', start:'first', duration:20 },
+  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte',     score:{add:4}, type:'overlay', duration:10 },
+  { id:'double',   label:'2× Speed',    sub:'+2 Punkte',         score:{add:2},  type:'speed',   rate:2 },
+  { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',        score:{add:1},  type:'segment', start:'first', duration:20 },
 ];
 
 function buildChips(){

@@ -50,6 +50,13 @@
         </div>
       </div>
 
+      <!-- CHIPS / EFFEKTE -->
+      <div class="panel">
+        <h3>Chip wählen (optional, max. 1)</h3>
+        <div id="chipGrid" class="chips"></div>
+        <div id="chipHint" class="note">Kein Effekt gewählt.</div>
+      </div>
+
       <div id="controls">
         <button id="playBtn">▶ Play</button>
         <button id="pauseBtn">⏸️ Pause</button>
@@ -57,7 +64,9 @@
       </div>
 
       <div id="score">
-        <p>Punkte (<span id="currentPlayerName">—</span>): <span id="scoreValue">0</span></p>
+        <p>Spieler: <span id="currentPlayerName">—</span></p>
+        <p>Rundenpunkte: <span id="turnPoints">0</span> <span id="effectNote" class="note"></span></p>
+        <p>Gesamtpunkte: <span id="scoreValue">0</span></p>
         <div class="score-btns">
           <button id="correctTitleBtn">Titel richtig (+1)</button>
           <button id="correctArtistBtn">Interpret richtig (+1)</button>
@@ -80,7 +89,7 @@
   <script src="data/songs00s.js"></script>
   <script src="data/songs10s.js"></script>
   <script src="data/songs20s.js"></script>
-
+  
   <!-- Spiellogik zuletzt -->
   <script src="script.js"></script>
 </body>

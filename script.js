@@ -1,3 +1,6 @@
+const rickRoll = new Audio('assets/mp3/rickroll.mp3');
+rickRoll.volume = 0.3; // etwas leiser als der Hauptsong
+
 let currentSong = null;
 let score = 0;
 
@@ -16,10 +19,23 @@ function getRandomSong() {
   return activeDecadeSongs[index];
 }
 
+// 3. Effekt-Logik vorbereiten
+function applyEffect(effect) {
+  if (effect === "rickroll") {
+    rickRoll.currentTime = 0; // von Anfang starten
+    rickRoll.play();
+    setTimeout(() => rickRoll.pause(), 10000); // nach 10s stoppen
+  }
+  // weitere Effekte später hier ergänzen
+}
+
 playBtn.addEventListener("click", () => {
   currentSong = getRandomSong();
   const audio = new Audio(currentSong.src);
   audio.play();
+
+  // Testweise Rickroll auslösen
+  applyEffect("rickroll");
 });
 
 revealCard.addEventListener("click", () => {

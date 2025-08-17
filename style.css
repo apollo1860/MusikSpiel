@@ -50,3 +50,40 @@ button:active {
   background: #222;
   transform: rotateY(180deg);
 }
+.hidden { display: none; }
+
+#startMenu {
+  text-align: center;
+  padding: 20px;
+}
+
+#playerList .name-row {
+  margin: 8px 0;
+}
+
+#playerList .nameInput {
+  width: 100%;
+  max-width: 320px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+}
+
+.start-actions {
+  margin-top: 12px;
+}
+
+#addPlayer, #startGame {
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 8px;
+  margin: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#addPlayer { background: #333; color: #fff; }
+#startGame { background: #4ade80; color: #06220f; }
+

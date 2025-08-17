@@ -15,12 +15,16 @@ let turnInRound = 0;              // 0..players.length-1 innerhalb einer Runde
 let currentPlayerIndex = 0;       // globaler Index (0..players.length-1)
 let currentSong = null;
 let currentAudio = null;
+let needRoundOverlay = false;     // zeigt an, ob vor dem nächsten Zug die Dekaden-Animation gezeigt werden soll
 
-// --- DOM Refs: Startmenü / Handoff / Game ---
+// --- DOM Refs: Startmenü / Decade Overlay / Handoff / Game ---
 const elStartMenu   = document.getElementById('startMenu');
 const elPlayerList  = document.getElementById('playerList');
 const elAddPlayer   = document.getElementById('addPlayer');
 const elStartGame   = document.getElementById('startGame');
+
+const elDecadeOverlay = document.getElementById('decadeOverlay');
+const elDecadeText    = document.getElementById('decadeText');
 
 const elHandoff     = document.getElementById('handoff');
 const elHandoffText = document.getElementById('handoffText');
@@ -44,19 +48,66 @@ const nextBtn           = document.getElementById('nextBtn');
 
 // --- Dekaden ermitteln (nur die, die du eingebunden hast) ---
 const decades = [];
-if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
-if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
-if (typeof songs70s !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
-if (typeof songs80s !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
-if (typeof songs90s !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
+if (typeof songs50s   !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
+if (typeof songs60s   !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
+if (typeof songs70s   !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
+if (typeof songs80s   !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
+if (typeof songs90s   !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
 if (typeof songs2000s !== 'undefined') decades.push({key:'00s', label:'2000er', list:songs2000s});
 if (typeof songs2010s !== 'undefined') decades.push({key:'10s', label:'2010er', list:songs2010s});
 if (typeof songs2020s !== 'undefined') decades.push({key:'20s', label:'2020er', list:songs2020s});
 
-// Fallback, falls nur 50s eingebunden sind
 if (decades.length === 0) {
-  // Sicherstellen, dass es nicht crasht, wenn noch keine Songs geladen sind
-  decades.push({key:'local', label:'Songs', list: []});
+  decades.push({key:'local', label:'Songs', list: []}); // Fallback
+}
+
+// ------------------------
+// Helpers
+// ------------------------
+function stopAllAudio(){
+  if (currentAudio){ currentAudio.pause(); currentAudio.currentTime = 0; }
+  if (!rickRoll.paused){ rickRoll.pause(); rickRoll.currentTime = 0; }
+}
+
+function updateRoundAndTurnLabels() {
+  const dec = decades[roundIndex];
+  const label = dec ? dec.label : `Runde ${roundIndex+1}`;
+  elRoundInfo.textContent = `Runde ${roundIndex+1} – ${label}`;
+  elTurnInfo.textContent  = `Dran: ${players[currentPlayerIndex] || '—'}`;
+  elCurrentName.textContent = players[currentPlayerIndex] || '—';
+  scoreValue.textContent = scores[currentPlayerIndex] ?? 0;
+}
+
+function getActiveDecadeSongs(){
+  const dec = decades[roundIndex];
+  return (dec && dec.list && dec.list.length) ? dec.list : [];
+}
+
+function getRandomSong(){
+  const list = getActiveDecadeSongs();
+  if (!list.length) return null;
+  const idx = Math.floor(Math.random() * list.length);
+  return list[idx];
+}
+
+// Dekaden-Overlay zeigen (kurz) und dann callback ausführen
+function showDecadeOverlay(label, cb){
+  stopAllAudio();
+  elDecadeText.textContent = label;
+  elDecadeOverlay.classList.remove('hidden');
+
+  // Animation neu starten (falls mehrfach)
+  elDecadeText.style.animation = 'none';
+  // reflow
+  void elDecadeText.offsetWidth;
+  elDecadeText.style.animation = '';
+
+  // Nach kurzer Zeit ausblenden und fortsetzen
+  const DURATION_MS = 1600; // "wenige Sekunden" – knackig kurz
+  setTimeout(()=>{
+    elDecadeOverlay.classList.add('hidden');
+    if (typeof cb === 'function') cb();
+  }, DURATION_MS);
 }
 
 // ------------------------
@@ -82,92 +133,93 @@ elStartGame.addEventListener('click', () => {
   players = names;
   scores = new Array(players.length).fill(0);
 
-  // Menü aus -> Handoff zur ersten Person
+  // Menü aus -> Erste Rundendekade animieren -> Handoff Spieler 1
   elStartMenu.classList.add('hidden');
 
-  // Runde auf 0, Starter auf 0, Zug 0
   roundIndex = 0;
-  starterIndex = 0;
+  starterIndex = 0;   // Runde 1: Spieler 1 startet
   turnInRound = 0;
+  currentPlayerIndex = (starterIndex + turnInRound) % players.length;
 
-  beginNextTurn(); // zeigt Handoff für ersten Spieler
+  updateRoundAndTurnLabels();
+  needRoundOverlay = true;
+  proceedFlow();
 });
 
 // ------------------------
-// Runden- & Zug-Logik
+// Runden- & Zug-Flow
 // ------------------------
-function updateRoundAndTurnLabels() {
-  const dec = decades[roundIndex];
-  const label = dec ? dec.label : `Runde ${roundIndex+1}`;
-  elRoundInfo.textContent = `Runde ${roundIndex+1} – ${label}`;
-  elTurnInfo.textContent  = `Dran: ${players[currentPlayerIndex] || '—'}`;
-  elCurrentName.textContent = players[currentPlayerIndex] || '—';
-  scoreValue.textContent = scores[currentPlayerIndex] ?? 0;
-}
-
-function beginNextTurn(){
-  // Falls Runde fertig: neue Runde starten (Starter rotiert)
-  if (turnInRound >= players.length) {
-    turnInRound = 0;
-    starterIndex = (starterIndex + 1) % players.length;
-    roundIndex++;
-
-    // Spielende?
-    if (roundIndex >= decades.length) {
-      alert('🎉 Spiel beendet! Danke fürs Mitspielen.');
-      // Reset zur Startseite (optional)
-      elHandoff.classList.add('hidden');
-      elGame.classList.add('hidden');
-      elStartMenu.classList.remove('hidden');
-      return;
-    }
+function proceedFlow(){
+  // Spielende?
+  if (roundIndex >= decades.length) {
+    alert('🎉 Spiel beendet! Danke fürs Mitspielen.');
+    // zurück zum Start
+    elGame.classList.add('hidden');
+    elHandoff.classList.add('hidden');
+    elStartMenu.classList.remove('hidden');
+    return;
   }
 
-  currentPlayerIndex = (starterIndex + turnInRound) % players.length;
+  const decLabel = decades[roundIndex]?.label || `Runde ${roundIndex+1}`;
 
-  // Handoff anzeigen
-  const who = players[currentPlayerIndex];
-  elHandoffTitle.textContent = `Nächster Spieler`;
-  elHandoffText.textContent  = `Bitte das Handy an ${who} geben!`;
-  elHandoff.classList.remove('hidden');
-  elGame.classList.add('hidden');
+  // Wenn Overlay gewünscht (Start einer Runde): erst Dekade zeigen, dann Handoff
+  if (needRoundOverlay) {
+    showDecadeOverlay(decLabel, () => {
+      needRoundOverlay = false;
+      showHandoff();
+    });
+  } else {
+    showHandoff();
+  }
+}
 
-  // Spiel-UI zurücksetzen
+function showHandoff(){
+  stopAllAudio();
   revealCard.textContent = '❓';
   revealCard.classList.remove('flipped');
   nextBtn.classList.add('hidden');
 
-  // Labels updaten
+  currentPlayerIndex = (starterIndex + turnInRound) % players.length;
   updateRoundAndTurnLabels();
+
+  const who = players[currentPlayerIndex];
+  elHandoffTitle.textContent = `Nächster Spieler`;
+  elHandoffText.textContent  = `Bitte das Handy an ${who} geben!`;
+
+  elGame.classList.add('hidden');
+  elHandoff.classList.remove('hidden');
 }
 
 elHandoffGo.addEventListener('click', () => {
-  // vom Handoff ins Spiel
   elHandoff.classList.add('hidden');
   elGame.classList.remove('hidden');
+});
+
+// Weiter zum nächsten Spieler / nächste Runde
+nextBtn.addEventListener('click', () => {
+  stopAllAudio();
+
+  // Nächster Spieler in dieser Runde
+  turnInRound++;
+
+  if (turnInRound >= players.length) {
+    // Runde fertig -> nächste Runde
+    turnInRound = 0;
+    starterIndex = (starterIndex + 1) % players.length; // Starter rotiert
+    roundIndex++;
+    if (roundIndex < decades.length) {
+      needRoundOverlay = true;  // beim Start der neuen Runde wieder Animation zeigen
+    }
+  }
+
+  proceedFlow();
 });
 
 // ------------------------
 // Audio & Abspiel-Logik
 // ------------------------
-function getActiveDecadeSongs(){
-  const dec = decades[roundIndex];
-  return (dec && dec.list && dec.list.length) ? dec.list : [];
-}
-
-function getRandomSong(){
-  const list = getActiveDecadeSongs();
-  if (!list.length) return null;
-  const idx = Math.floor(Math.random() * list.length);
-  return list[idx];
-}
-
-// Play
 playBtn.addEventListener('click', () => {
-  // laufendes Audio stoppen
-  if (currentAudio){ currentAudio.pause(); currentAudio.currentTime = 0; }
-  if (!rickRoll.paused){ rickRoll.pause(); rickRoll.currentTime = 0; }
-
+  stopAllAudio();
   currentSong = getRandomSong();
   if (!currentSong) {
     alert('Für diese Dekade sind noch keine Songs eingebunden.');
@@ -209,9 +261,7 @@ revealCard.addEventListener('click', () => {
   revealCard.textContent = `${currentSong.title} – ${currentSong.artist}`;
   revealCard.classList.add('flipped');
 
-  if (!rickRoll.paused) { rickRoll.pause(); rickRoll.currentTime = 0; }
-  if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio.currentTime = 0; }
-
+  stopAllAudio();
   nextBtn.classList.remove('hidden');
 });
 
@@ -227,15 +277,4 @@ correctArtistBtn.addEventListener('click', () => {
 wrongBtn.addEventListener('click', () => {
   scores[currentPlayerIndex] = (scores[currentPlayerIndex] ?? 0) - 2;
   scoreValue.textContent = scores[currentPlayerIndex];
-});
-
-// Weiter zum nächsten Spieler
-nextBtn.addEventListener('click', () => {
-  // Sicherheit: Audio stoppen
-  if (currentAudio){ currentAudio.pause(); currentAudio.currentTime = 0; }
-  if (!rickRoll.paused){ rickRoll.pause(); rickRoll.currentTime = 0; }
-
-  // Nächster Zug in dieser Runde
-  turnInRound++;
-  beginNextTurn();
 });

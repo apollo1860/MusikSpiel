@@ -12,6 +12,7 @@ const scoreValue = document.getElementById("scoreValue");
 const correctTitleBtn = document.getElementById("correctTitleBtn");
 const correctArtistBtn = document.getElementById("correctArtistBtn");
 const wrongBtn = document.getElementById("wrongBtn");
+const pauseBtn = document.getElementById("pauseBtn");
 
 // Testweise: wir nehmen erstmal nur 50s
 let activeDecadeSongs = songs50s;

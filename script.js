@@ -2,24 +2,36 @@
 // Musik-Trinkspiel – Logik
 // ===========================
 
-// Rickroll vorbereiten (Pfad ggf. anpassen)
-const rickRoll = new Audio('assets/mp3/rickroll.mp3');
-rickRoll.volume = 0.72;
+// Feste Audio-Elemente (stabil für paralleles Abspielen)
+const mainAudio = document.getElementById('mainAudio');
+const rickAudio = document.getElementById('rickAudio');
+rickAudio.src = 'assets/mp3/rickroll.mp3';
+rickAudio.volume = 0.35;
+
+function setPreservePitch(el, keep){
+  if ('preservesPitch' in el) el.preservesPitch = keep;
+  if ('mozPreservesPitch' in el) el.mozPreservesPitch = keep;
+  if ('webkitPreservesPitch' in el) el.webkitPreservesPitch = keep;
+}
 
 // --- Spiel-States ---
-let players = [];                 // ['Name1','Name2',...]
-let scores = [];                  // [0,0,...]
-let roundIndex = 0;               // 0..(decades.length-1)
+let players = [];
+let scores = [];
+let roundIndex = 0;               // 0..decades.length-1
 let starterIndex = 0;             // wer startet die Runde (rotiert)
 let turnInRound = 0;              // 0..players.length-1 innerhalb einer Runde
-let currentPlayerIndex = 0;       // 0..players.length-1 (aktueller Zug)
-let currentSong = null;
-let currentAudio = null;
+let currentPlayerIndex = 0;
+
+let currentSong = null;           // fest je Zug
+let turnStarted = false;          // wurde in diesem Zug schon (zum ersten Mal) gespielt?
 let clipTimer = null;
 
-let needRoundOverlay = false;     // vor nächstem Zug Dekaden-Animation zeigen?
-let selectedEffect = null;        // {id, label, score:{mult?, add?}, ...} | null
-let turnBasePoints = 0;           // +1 Titel, +1 Interpret, oder −2 bei „Beides falsch“
+let needRoundOverlay = false;     // Dekaden-Animation vor Start einer Runde?
+let selectedEffect = null;        // optionaler Effekt
+let turnBasePoints = 0;
+
+// pro Runde: bereits verwendete Songs (key = id||src)
+let usedSrcThisRound = new Set();
 
 // --- DOM Refs ---
 const elStartMenu   = document.getElementById('startMenu');
@@ -54,7 +66,7 @@ const chipHint          = document.getElementById('chipHint');
 const turnPointsEl      = document.getElementById('turnPoints');
 const effectNote        = document.getElementById('effectNote');
 
-// Scrabble-Style FX Overlay
+// FX
 const fxOverlay = document.getElementById('fxOverlay');
 const fxText    = document.getElementById('fxText');
 
@@ -68,7 +80,6 @@ if (typeof songs90s   !== 'undefined') decades.push({key:'90s', label:'1990er', 
 if (typeof songs2000s !== 'undefined') decades.push({key:'00s', label:'2000er', list:songs2000s});
 if (typeof songs2010s !== 'undefined') decades.push({key:'10s', label:'2010er', list:songs2010s});
 if (typeof songs2020s !== 'undefined') decades.push({key:'20s', label:'2020er', list:songs2020s});
-
 if (decades.length === 0) decades.push({key:'local', label:'Songs', list: []}); // Fallback
 
 // ------------------------
@@ -91,7 +102,7 @@ function buildChips(){
     btn.dataset.id = ch.id;
     btn.innerHTML = `<div class="title">${ch.label}</div><div class="sub">${ch.sub}</div>`;
     btn.addEventListener('click', ()=>{
-      // Auswählen / abwählen (nur 1 gleichzeitig)
+      if (chipGrid.classList.contains('disabled')) return; // nach erstem Play gesperrt
       if (selectedEffect && selectedEffect.id === ch.id) {
         selectedEffect = null;
         btn.classList.remove('selected');
@@ -113,10 +124,14 @@ function buildChips(){
 // ------------------------
 // Helpers
 // ------------------------
+function songKey(s){ return s?.id ?? s?.src; }
+
 function stopAllAudio(){
   clearClipTimer();
-  if (currentAudio){ currentAudio.pause(); currentAudio.currentTime = 0; }
-  if (!rickRoll.paused){ rickRoll.pause(); rickRoll.currentTime = 0; }
+  mainAudio.pause(); mainAudio.currentTime = 0;
+  rickAudio.pause(); rickAudio.currentTime = 0;
+  setPreservePitch(mainAudio, true);
+  mainAudio.playbackRate = 1;
 }
 function clearClipTimer(){
   if (clipTimer){ clearTimeout(clipTimer); clipTimer = null; }
@@ -134,12 +149,27 @@ function getActiveDecadeSongs(){
   const dec = decades[roundIndex];
   return (dec && dec.list && dec.list.length) ? dec.list : [];
 }
-function getRandomSong(){
+function pickSongForTurnAvoidingUsed(){
   const list = getActiveDecadeSongs();
   if (!list.length) return null;
-  const idx = Math.floor(Math.random() * list.length);
-  return list[idx];
+  const unused = list.filter(s => !usedSrcThisRound.has(songKey(s)));
+  const pool = unused.length ? unused : list; // fallback, falls zu wenige Songs
+  const chosen = pool[Math.floor(Math.random()*pool.length)];
+  // Nur registrieren, wenn wirklich noch nicht drin (damit der Fallback nicht doppelt zählt)
+  const key = songKey(chosen);
+  if (!usedSrcThisRound.has(key)) usedSrcThisRound.add(key);
+  return chosen;
 }
+function assignSongForCurrentTurn(){
+  currentSong = pickSongForTurnAvoidingUsed();
+  if (currentSong){
+    mainAudio.src = currentSong.src;
+    setPreservePitch(mainAudio, true);
+    mainAudio.playbackRate = 1;
+  }
+}
+
+// Segment abspielen (mit Auto-Stop)
 function playSegment(audio, startStrategy, lengthSec){
   const startPlayback = ()=>{
     const dur = audio.duration || 0;
@@ -170,14 +200,10 @@ function showFx(label){
   if (!label) return;
   fxText.textContent = label;
   fxOverlay.classList.remove('hidden');
-
-  // Restart animation
   fxText.style.animation = 'none'; void fxText.offsetWidth; fxText.style.animation = '';
-  // hide after animation
   setTimeout(()=>{ fxOverlay.classList.add('hidden'); }, 1200);
 }
 function effectBadgeForCurrentTurn(){
-  // Badge nur zeigen, wenn der Effekt auch Punkte beeinflusst (und nur bei >0 Basispunkten)
   if (turnBasePoints <= 0 || !selectedEffect) return null;
   if (selectedEffect.score?.mult) return `×${selectedEffect.score.mult}`;
   if (selectedEffect.score?.add)  return `+${selectedEffect.score.add}`;
@@ -207,16 +233,16 @@ elStartGame.addEventListener('click', () => {
   players = names;
   scores = new Array(players.length).fill(0);
 
-  // Menü aus -> Erste Rundendekade animieren -> Handoff Spieler 1
   elStartMenu.classList.add('hidden');
 
   roundIndex = 0;
   starterIndex = 0;
   turnInRound = 0;
+  usedSrcThisRound = new Set();      // neue Runde → Set leeren
   currentPlayerIndex = (starterIndex + turnInRound) % players.length;
 
   buildChips();
-  resetTurnState(true); // true -> Chips deselektieren
+  resetTurnState(true);
   updateRoundAndTurnLabels();
   needRoundOverlay = true;
   proceedFlow();
@@ -226,7 +252,6 @@ elStartGame.addEventListener('click', () => {
 // Runden- & Zug-Flow
 // ------------------------
 function proceedFlow(){
-  // Spielende?
   if (roundIndex >= decades.length) {
     alert('🎉 Spiel beendet! Danke fürs Mitspielen.');
     elGame.classList.add('hidden');
@@ -258,8 +283,11 @@ function showHandoff(){
   nextBtn.classList.add('hidden');
 
   currentPlayerIndex = (starterIndex + turnInRound) % players.length;
-  resetTurnState(true); // neuen Zug starten, Chips zurücksetzen
+  resetTurnState(true);
   updateRoundAndTurnLabels();
+
+  // WICHTIG: Song für diesen Zug JETZT fest auswählen (kein Wechsel bei Play)
+  assignSongForCurrentTurn();
 
   const who = players[currentPlayerIndex];
   elHandoffTitle.textContent = `Nächster Spieler`;
@@ -277,20 +305,19 @@ elHandoffGo.addEventListener('click', () => {
 nextBtn.addEventListener('click', () => {
   stopAllAudio();
 
-  // Effekt-Badge (×2 / +2) kurz anzeigen, falls anwendbar
   const badge = effectBadgeForCurrentTurn();
   if (badge) showFx(badge);
 
-  // Punkte dieses Zugs final berechnen & verbuchen
   const delta = computeTurnDelta();
   scores[currentPlayerIndex] = (scores[currentPlayerIndex] ?? 0) + delta;
 
-  // Nächster Spieler / Runde
   turnInRound++;
   if (turnInRound >= players.length) {
+    // Rundenschluss
     turnInRound = 0;
-    starterIndex = (starterIndex + 1) % players.length; // Starter rotiert
+    starterIndex = (starterIndex + 1) % players.length;
     roundIndex++;
+    usedSrcThisRound = new Set();     // NEUE RUNDE → Songs-Set leeren (keine Duplikate in neuer Runde)
     if (roundIndex < decades.length) needRoundOverlay = true;
   }
   proceedFlow();
@@ -300,56 +327,78 @@ nextBtn.addEventListener('click', () => {
 // Audio & Abspiel-Logik
 // ------------------------
 playBtn.addEventListener('click', () => {
-  stopAllAudio();
-  currentSong = getRandomSong();
+  // Kein Song? (sollte nicht passieren, da bei Handoff gesetzt)
   if (!currentSong) {
-    alert('Für diese Dekade sind noch keine Songs eingebunden.');
+    assignSongForCurrentTurn();
+    if (!currentSong) {
+      alert('Für diese Dekade sind noch keine Songs eingebunden.');
+      return;
+    }
+  }
+
+  // Erster Start in diesem Zug → Effekt anwenden und Chips sperren
+  if (!turnStarted){
+    // Chips sperren (max. 1 Effekt pro Lied)
+    chipGrid.classList.add('disabled');
+
+    // Reset Audio-Zustand
+    clearClipTimer();
+    rickAudio.pause(); rickAudio.currentTime = 0;
+    setPreservePitch(mainAudio, true);
+    mainAudio.playbackRate = 1;
+
+    if (selectedEffect){
+      const eff = selectedEffect;
+      effectNote.textContent = `Effekt aktiv: ${eff.sub}`;
+
+      if (eff.type === 'segment'){
+        playSegment(mainAudio, eff.start, eff.duration);
+      } else if (eff.type === 'overlay'){
+        mainAudio.play().catch(()=>{});
+        rickAudio.currentTime = 0;
+        rickAudio.play().catch(()=>{});
+        clearClipTimer();
+        clipTimer = setTimeout(()=>{ rickAudio.pause(); }, (eff.duration || 10)*1000);
+      } else if (eff.type === 'speed'){
+        setPreservePitch(mainAudio, true);
+        mainAudio.playbackRate = eff.rate || 2;
+        mainAudio.play().catch(()=>{});
+      } else {
+        mainAudio.play().catch(()=>{});
+      }
+    } else {
+      effectNote.textContent = '';
+      mainAudio.play().catch(()=>{});
+    }
+
+    turnStarted = true;
+    pauseBtn.textContent = '⏸️ Pause';
     return;
   }
 
-  currentAudio = new Audio(currentSong.src);
-
-  // Effekt anwenden (optional, max. 1)
-  if (selectedEffect){
-    const eff = selectedEffect;
-    effectNote.textContent = `Effekt aktiv: ${eff.sub}`;
-
-    if (eff.type === 'segment'){
-      playSegment(currentAudio, eff.start, eff.duration);
-    } else if (eff.type === 'overlay'){
-      currentAudio.play().catch(()=>{});
-      rickRoll.currentTime = 0;
-      rickRoll.play().catch(()=>{});
-      clearClipTimer();
-      clipTimer = setTimeout(()=>{ rickRoll.pause(); }, (eff.duration || 10)*1000);
-    } else if (eff.type === 'speed'){
-      currentAudio.playbackRate = eff.rate || 2;
-      currentAudio.play().catch(()=>{});
-    } else {
-      currentAudio.play().catch(()=>{});
+  // Bereits gestartet → einfach fortsetzen (gleicher Song!)
+  if (mainAudio.paused) {
+    mainAudio.play().catch(()=>{});
+    // Rickroll ggf. wieder anwerfen, falls aktiv war und noch Zeit übrig
+    if (selectedEffect?.id === 'rickroll' && rickAudio.currentTime > 0 && rickAudio.currentTime < (selectedEffect.duration||10)) {
+      rickAudio.play().catch(()=>{});
     }
-  } else {
-    effectNote.textContent = '';
-    currentAudio.play().catch(()=>{});
+    pauseBtn.textContent = '⏸️ Pause';
   }
-
-  pauseBtn.textContent = '⏸️ Pause';
 });
 
 // Pause / Weiter
 pauseBtn.addEventListener('click', () => {
-  if (currentAudio && !currentAudio.paused) {
-    currentAudio.pause();
+  if (!turnStarted) return; // noch nichts gestartet
+  if (!mainAudio.paused) {
+    mainAudio.pause();
+    if (!rickAudio.paused) rickAudio.pause();
     pauseBtn.textContent = '▶️ Weiter';
-  } else if (currentAudio && currentAudio.paused) {
-    currentAudio.play();
-    pauseBtn.textContent = '⏸️ Pause';
-  }
-  if (!rickRoll.paused) {
-    rickRoll.pause();
-    pauseBtn.textContent = '▶️ Weiter';
-  } else if (rickRoll.currentTime > 0 && rickRoll.paused && selectedEffect?.id === 'rickroll') {
-    rickRoll.play();
+  } else {
+    mainAudio.play().catch(()=>{});
+    if (selectedEffect?.id === 'rickroll' && rickAudio.currentTime > 0 && rickAudio.currentTime < (selectedEffect.duration||10)) {
+      rickAudio.play().catch(()=>{});
+    }
     pauseBtn.textContent = '⏸️ Pause';
   }
 });
@@ -359,7 +408,7 @@ revealCard.addEventListener('click', () => {
   if (!currentSong) return;
   revealCard.textContent = `${currentSong.title} – ${currentSong.artist}`;
   revealCard.classList.add('flipped');
-  stopAllAudio();
+  mainAudio.pause(); rickAudio.pause();
   nextBtn.classList.remove('hidden');
 });
 
@@ -368,6 +417,7 @@ revealCard.addEventListener('click', () => {
 // ------------------------
 function resetTurnState(resetChip=false){
   turnBasePoints = 0;
+  turnStarted = false;
   turnPointsEl.textContent = '0';
 
   correctTitleBtn.disabled = false;
@@ -375,15 +425,15 @@ function resetTurnState(resetChip=false){
   wrongBtn.disabled = false;
 
   if (resetChip) {
-    // Chip-Auswahl zurücksetzen
     selectedEffect = null;
     effectNote.textContent = '';
     chipHint.textContent = 'Kein Effekt gewählt.';
     [...chipGrid.querySelectorAll('.chip')].forEach(b=>b.classList.remove('selected'));
+    chipGrid.classList.remove('disabled');
   }
 }
 function applyBasePointChange(delta){
-  if (turnBasePoints === -2 && delta > 0) return; // nach "Beides falsch" keine + Punkte
+  if (turnBasePoints === -2 && delta > 0) return;
   turnBasePoints += delta;
   turnPointsEl.textContent = String(turnBasePoints);
 }
@@ -410,8 +460,7 @@ function computeTurnDelta(){
   let subtotal = turnBasePoints; // -2, 0, 1, 2
   const eff = selectedEffect;
 
-  if (subtotal <= 0) return subtotal; // bei 0 oder −2 kein Bonus
-
+  if (subtotal <= 0) return subtotal;
   if (!eff) return subtotal;
 
   if (eff.score?.mult) return subtotal * eff.score.mult; // ×2

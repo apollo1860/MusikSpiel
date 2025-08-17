@@ -30,6 +30,16 @@
     <div id="decadeText">1950er</div>
   </section>
 
+  <!-- ZWISCHENBILANZ (Overlay zwischen Runden) -->
+  <section id="summaryOverlay" class="hidden" aria-hidden="true">
+    <div class="summary-card">
+      <h2>Zwischenbilanz</h2>
+      <p id="summarySubtitle" class="note">Nach Runde 1 von 8</p>
+      <ol id="summaryList" class="summary-list"></ol>
+      <button id="summaryContinue">Weiter</button>
+    </div>
+  </section>
+
   <!-- HANDOVER / ÜBERGABE-SLIDE (zwischen Zügen) -->
   <section id="handoff" class="hidden">
     <div class="handoff-card">
@@ -92,12 +102,7 @@
   <!-- Songs-Daten laden (füge weitere Dekaden hinzu) -->
   <script src="data/songs50s.js"></script>
   <script src="data/songs60s.js"></script>
-  <script src="data/songs70s.js"></script>
-  <script src="data/songs80s.js"></script>
-  <script src="data/songs90s.js"></script>
-  <script src="data/songs00s.js"></script>
-  <script src="data/songs10s.js"></script>
-  <script src="data/songs20s.js"></script>
+  <!-- später ergänzen: 70s, 80s, 90s, 2000s, 2010s, 2020s -->
 
   <!-- Spiellogik zuletzt -->
   <script src="script.js"></script>

@@ -1,7 +1,9 @@
+// --- Rickroll vorbereiten ---
 const rickRoll = new Audio('assets/mp3/rickroll.mp3');
-rickRoll.volume = 0.3; // etwas leiser als der Hauptsong
+rickRoll.volume = 0.6; // etwas leiser als der Hauptsong
 
 let currentSong = null;
+let currentAudio = null; // aktuelles Audio-Objekt für normalen Song
 let score = 0;
 
 const playBtn = document.getElementById("playBtn");
@@ -19,31 +21,46 @@ function getRandomSong() {
   return activeDecadeSongs[index];
 }
 
-// 3. Effekt-Logik vorbereiten
-function applyEffect(effect) {
-  if (effect === "rickroll") {
-    rickRoll.currentTime = 0; // von Anfang starten
-    rickRoll.play();
-    setTimeout(() => rickRoll.pause(), 10000); // nach 10s stoppen
-  }
-  // weitere Effekte später hier ergänzen
-}
-
+// --- Play Button ---
 playBtn.addEventListener("click", () => {
-  currentSong = getRandomSong();
-  const audio = new Audio(currentSong.src);
-  audio.play();
+  // falls schon ein Song läuft -> stoppen
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+  if (!rickRoll.paused) {
+    rickRoll.pause();
+    rickRoll.currentTime = 0;
+  }
 
-  // Testweise Rickroll auslösen
-  applyEffect("rickroll");
+  // neuen Song auswählen
+  currentSong = getRandomSong();
+  currentAudio = new Audio(currentSong.src);
+  currentAudio.play();
 });
 
+// --- Reveal Card ---
 revealCard.addEventListener("click", () => {
   if (!currentSong) return;
+
+  // Lösung anzeigen
   revealCard.textContent = `${currentSong.title} – ${currentSong.artist}`;
   revealCard.classList.add("flipped");
+
+  // Falls Rickroll läuft -> stoppen
+  if (!rickRoll.paused) {
+    rickRoll.pause();
+    rickRoll.currentTime = 0;
+  }
+
+  // Falls normaler Song läuft -> stoppen
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
 });
 
+// --- Punktevergabe ---
 correctTitleBtn.addEventListener("click", () => {
   score++;
   scoreValue.textContent = score;

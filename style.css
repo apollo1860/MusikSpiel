@@ -109,6 +109,8 @@ body{
 .chip .title{font-weight:800; font-size:14px}
 .chip .sub{font-size:12px; color:var(--muted)}
 .chip.selected{outline:2px solid var(--accent)}
+/* nach erstem Play im Zug deaktivieren */
+.chips.disabled{opacity:.6; filter:grayscale(.2); pointer-events:none}
 
 #score{
   background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:12px; margin-top:14px

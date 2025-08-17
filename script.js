@@ -23,12 +23,15 @@ let turnInRound = 0;              // 0..players.length-1 innerhalb einer Runde
 let currentPlayerIndex = 0;
 
 let currentSong = null;           // fest je Zug
-let turnStarted = false;          // wurde in diesem Zug schon (zum ersten Mal) gespielt?
+let turnStarted = false;          // wurde in diesem Zug schon gestartet?
 let clipTimer = null;
 
 let needRoundOverlay = false;     // Dekaden-Animation vor Start einer Runde?
 let selectedEffect = null;        // optionaler Effekt
 let turnBasePoints = 0;
+
+let summaryPending = false;       // Zwischenbilanz soll gezeigt werden
+let lastFinishedRoundNum = 0;     // für Subtitle "Nach Runde X von Y"
 
 // pro Runde: bereits verwendete Songs (key = id||src)
 let usedSrcThisRound = new Set();
@@ -42,10 +45,13 @@ const elStartGame   = document.getElementById('startGame');
 const elDecadeOverlay = document.getElementById('decadeOverlay');
 const elDecadeText    = document.getElementById('decadeText');
 
+const elSummaryOverlay = document.getElementById('summaryOverlay');
+const elSummarySubtitle= document.getElementById('summarySubtitle');
+const elSummaryList    = document.getElementById('summaryList');
+const elSummaryContinue= document.getElementById('summaryContinue');
+
 const elHandoff     = document.getElementById('handoff');
 const elHandoffText = document.getElementById('handoffText');
-const elHandoffTitle= document.getElementById('handoffTitle');
-const elHandoffGo   = document.getElementById('handoffContinue');
 
 const elGame        = document.getElementById('game');
 const elRoundInfo   = document.getElementById('round-info');
@@ -155,7 +161,6 @@ function pickSongForTurnAvoidingUsed(){
   const unused = list.filter(s => !usedSrcThisRound.has(songKey(s)));
   const pool = unused.length ? unused : list; // fallback, falls zu wenige Songs
   const chosen = pool[Math.floor(Math.random()*pool.length)];
-  // Nur registrieren, wenn wirklich noch nicht drin (damit der Fallback nicht doppelt zählt)
   const key = songKey(chosen);
   if (!usedSrcThisRound.has(key)) usedSrcThisRound.add(key);
   return chosen;
@@ -166,32 +171,6 @@ function assignSongForCurrentTurn(){
     mainAudio.src = currentSong.src;
     setPreservePitch(mainAudio, true);
     mainAudio.playbackRate = 1;
-  }
-}
-
-// Segment abspielen (mit Auto-Stop)
-function playSegment(audio, startStrategy, lengthSec){
-  const startPlayback = ()=>{
-    const dur = audio.duration || 0;
-    let start = 0;
-    if (startStrategy === 'last') {
-      start = Math.max(0, dur - lengthSec);
-    } else if (startStrategy === 'random') {
-      start = Math.max(0, dur > lengthSec ? Math.random()*(dur - lengthSec) : 0);
-    } // else 'first' -> 0
-    audio.currentTime = start;
-    audio.play().catch(()=>{});
-    clearClipTimer();
-    clipTimer = setTimeout(()=>{ audio.pause(); }, lengthSec*1000);
-  };
-  if (isNaN(audio.duration) || !isFinite(audio.duration)){
-    audio.addEventListener('loadedmetadata', function once(){
-      audio.removeEventListener('loadedmetadata', once);
-      startPlayback();
-    });
-    audio.load();
-  } else {
-    startPlayback();
   }
 }
 
@@ -252,6 +231,10 @@ elStartGame.addEventListener('click', () => {
 // Runden- & Zug-Flow
 // ------------------------
 function proceedFlow(){
+  // 1) Zwischenbilanz zuerst, falls angefordert
+  if (summaryPending) { showSummary(); return; }
+
+  // 2) Spielende?
   if (roundIndex >= decades.length) {
     alert('🎉 Spiel beendet! Danke fürs Mitspielen.');
     elGame.classList.add('hidden');
@@ -259,6 +242,8 @@ function proceedFlow(){
     elStartMenu.classList.remove('hidden');
     return;
   }
+
+  // 3) Start der nächsten Runde: erst Dekaden-Animation, dann Handoff
   const decLabel = decades[roundIndex]?.label || `Runde ${roundIndex+1}`;
   if (needRoundOverlay) {
     showDecadeOverlay(decLabel, () => { needRoundOverlay = false; showHandoff(); });
@@ -266,6 +251,7 @@ function proceedFlow(){
     showHandoff();
   }
 }
+
 function showDecadeOverlay(label, cb){
   stopAllAudio();
   elDecadeText.textContent = label;
@@ -276,6 +262,7 @@ function showDecadeOverlay(label, cb){
     if (typeof cb === 'function') cb();
   }, 1600);
 }
+
 function showHandoff(){
   stopAllAudio();
   revealCard.textContent = '❓';
@@ -286,22 +273,68 @@ function showHandoff(){
   resetTurnState(true);
   updateRoundAndTurnLabels();
 
-  // WICHTIG: Song für diesen Zug JETZT fest auswählen (kein Wechsel bei Play)
+  // Song für diesen Zug jetzt fest auswählen
   assignSongForCurrentTurn();
 
   const who = players[currentPlayerIndex];
-  elHandoffTitle.textContent = `Nächster Spieler`;
-  elHandoffText.textContent  = `Bitte das Handy an ${who} geben!`;
+  document.getElementById('handoffText').textContent  = `Bitte das Handy an ${who} geben!`;
 
   elGame.classList.add('hidden');
   elHandoff.classList.remove('hidden');
 }
-elHandoffGo.addEventListener('click', () => {
+
+document.getElementById('handoffContinue').addEventListener('click', () => {
   elHandoff.classList.add('hidden');
   elGame.classList.remove('hidden');
 });
 
+// --- Zwischenbilanz Overlay ---
+function showSummary(){
+  // Liste name/score bauen & sortieren
+  const data = players.map((name, i)=>({ name, score: scores[i] ?? 0 }));
+  data.sort((a,b)=> b.score - a.score);
+
+  // Subtitle: Nach Runde X von Y
+  const totalRounds = decades.length;
+  elSummarySubtitle.textContent = `Nach Runde ${lastFinishedRoundNum} von ${totalRounds}`;
+
+  // Einträge rendern
+  elSummaryList.innerHTML = '';
+  data.forEach((row, idx)=>{
+    const li = document.createElement('li');
+    li.className = 'summary-item';
+    li.innerHTML = `
+      <span class="rank">${idx+1}.</span>
+      <span class="name">${row.name}</span>
+      <span class="pts">${row.score} Punkte</span>
+    `;
+    elSummaryList.appendChild(li);
+  });
+
+  // Overlay zeigen, alles andere aus
+  elGame.classList.add('hidden');
+  elHandoff.classList.add('hidden');
+  elSummaryOverlay.classList.remove('hidden');
+}
+
+elSummaryContinue.addEventListener('click', ()=>{
+  elSummaryOverlay.classList.add('hidden');
+  summaryPending = false;
+
+  // Wenn Spiel schon vorbei, jetzt beenden
+  if (roundIndex >= decades.length) {
+    proceedFlow(); // führt ins Spielende
+    return;
+  }
+
+  // Sonst die nächste Dekaden-Animation starten
+  needRoundOverlay = true;
+  proceedFlow();
+});
+
+// ------------------------
 // Weiter zum nächsten Spieler / nächste Runde
+// ------------------------
 nextBtn.addEventListener('click', () => {
   stopAllAudio();
 
@@ -317,8 +350,11 @@ nextBtn.addEventListener('click', () => {
     turnInRound = 0;
     starterIndex = (starterIndex + 1) % players.length;
     roundIndex++;
-    usedSrcThisRound = new Set();     // NEUE RUNDE → Songs-Set leeren (keine Duplikate in neuer Runde)
-    if (roundIndex < decades.length) needRoundOverlay = true;
+    lastFinishedRoundNum = roundIndex; // für „Nach Runde X“
+    usedSrcThisRound = new Set();      // neue Runde → Reset Duplikate
+
+    // Vor nächster Dekaden-Animation erst die Zwischenbilanz zeigen
+    summaryPending = true;
   }
   proceedFlow();
 });
@@ -326,8 +362,32 @@ nextBtn.addEventListener('click', () => {
 // ------------------------
 // Audio & Abspiel-Logik
 // ------------------------
+function playSegment(audio, startStrategy, lengthSec){
+  const startPlayback = ()=>{
+    const dur = audio.duration || 0;
+    let start = 0;
+    if (startStrategy === 'last') {
+      start = Math.max(0, dur - lengthSec);
+    } else if (startStrategy === 'random') {
+      start = Math.max(0, dur > lengthSec ? Math.random()*(dur - lengthSec) : 0);
+    } // else 'first' -> 0
+    audio.currentTime = start;
+    audio.play().catch(()=>{});
+    clearClipTimer();
+    clipTimer = setTimeout(()=>{ audio.pause(); }, lengthSec*1000);
+  };
+  if (isNaN(audio.duration) || !isFinite(audio.duration)){
+    audio.addEventListener('loadedmetadata', function once(){
+      audio.removeEventListener('loadedmetadata', once);
+      startPlayback();
+    });
+    audio.load();
+  } else {
+    startPlayback();
+  }
+}
+
 playBtn.addEventListener('click', () => {
-  // Kein Song? (sollte nicht passieren, da bei Handoff gesetzt)
   if (!currentSong) {
     assignSongForCurrentTurn();
     if (!currentSong) {
@@ -336,9 +396,8 @@ playBtn.addEventListener('click', () => {
     }
   }
 
-  // Erster Start in diesem Zug → Effekt anwenden und Chips sperren
   if (!turnStarted){
-    // Chips sperren (max. 1 Effekt pro Lied)
+    // Chips sperren (max. 1 Effekt)
     chipGrid.classList.add('disabled');
 
     // Reset Audio-Zustand
@@ -376,10 +435,9 @@ playBtn.addEventListener('click', () => {
     return;
   }
 
-  // Bereits gestartet → einfach fortsetzen (gleicher Song!)
+  // Resume (gleicher Song)
   if (mainAudio.paused) {
     mainAudio.play().catch(()=>{});
-    // Rickroll ggf. wieder anwerfen, falls aktiv war und noch Zeit übrig
     if (selectedEffect?.id === 'rickroll' && rickAudio.currentTime > 0 && rickAudio.currentTime < (selectedEffect.duration||10)) {
       rickAudio.play().catch(()=>{});
     }
@@ -389,7 +447,7 @@ playBtn.addEventListener('click', () => {
 
 // Pause / Weiter
 pauseBtn.addEventListener('click', () => {
-  if (!turnStarted) return; // noch nichts gestartet
+  if (!turnStarted) return;
   if (!mainAudio.paused) {
     mainAudio.pause();
     if (!rickAudio.paused) rickAudio.pause();

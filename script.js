@@ -57,6 +57,16 @@ let lastFinishedRoundNum = 0;     // für Subtitle "Nach Runde X von Y"
 
 // pro Runde: bereits verwendete Songs (key = id||src)
 let usedSrcThisRound = new Set();
+let rickOverlayActive = false;
+let restoreMainVolume = 1;
+
+function stopRickOverlay(){
+  if (!rickOverlayActive) return;
+  rickAudio.pause();
+  rickAudio.currentTime = 0;
+  mainAudio.volume = restoreMainVolume;
+  rickOverlayActive = false;
+}
 
 // --- DOM Refs ---
 const elStartMenu   = document.getElementById('startMenu');
@@ -118,7 +128,7 @@ const CHIPS = [
   { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte',        score:{add:2}, type:'segment', start:'first', duration:10 },
   { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte',        score:{add:3}, type:'segment', start:'last',  duration:10 },
   { id:'random10', label:'Random 10s',  sub:'+2 Punkte',        score:{add:2},  type:'segment', start:'random',duration:10 },
-  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte',     score:{add:4}, type:'overlay', duration:10 },
+  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte',     score:{add:4}, type:'overlay', duration:null },
   { id:'double',   label:'2× Speed',    sub:'+2 Punkte',         score:{add:2},  type:'speed',   rate:2 },
   { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',        score:{add:1},  type:'segment', start:'first', duration:20 },
 ];
@@ -161,7 +171,9 @@ function stopAllAudio(){
   rickAudio.pause(); rickAudio.currentTime = 0;
   setPreservePitch(mainAudio, true);
   mainAudio.playbackRate = 1;
+  stopRickOverlay(); // << neu: Lautstärke zurück & Flag resetten
 }
+
 function clearClipTimer(){
   if (clipTimer){ clearTimeout(clipTimer); clipTimer = null; }
 }
@@ -435,12 +447,22 @@ playBtn.addEventListener('click', () => {
 
       if (eff.type === 'segment'){
         playSegment(mainAudio, eff.start, eff.duration);
-      } else if (eff.type === 'overlay'){
-        mainAudio.play().catch(()=>{});
-        rickAudio.currentTime = 0;
-        rickAudio.play().catch(()=>{});
-        clearClipTimer();
-        clipTimer = setTimeout(()=>{ rickAudio.pause(); }, (eff.duration || 10)*1000);
+     } else if (eff.type === 'overlay'){
+  // Hauptsong leicht ducken, beide parallel starten
+  restoreMainVolume = mainAudio.volume ?? 1;
+  mainAudio.volume = 0.85;
+
+  rickAudio.currentTime = 0;
+  rickOverlayActive = true;
+
+  Promise.allSettled([
+    mainAudio.play(),
+    rickAudio.play()
+  ]).then(() => {
+    // Rick endet automatisch, wenn der Hauptsong endet
+    mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
+  }).catch(err => console.warn('Parallel play failed:', err));
+}
       } else if (eff.type === 'speed'){
         setPreservePitch(mainAudio, true);
         mainAudio.playbackRate = eff.rate || 2;
@@ -461,8 +483,9 @@ playBtn.addEventListener('click', () => {
   // Resume (gleicher Song)
   if (mainAudio.paused) {
     mainAudio.play().catch(()=>{});
-    if (selectedEffect?.id === 'rickroll' && rickAudio.currentTime > 0 && rickAudio.currentTime < (selectedEffect.duration||10)) {
-      rickAudio.play().catch(()=>{});
+  if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
+    rickAudio.play().catch(()=>{});
+  }
     }
     pauseBtn.textContent = '⏸️ Pause';
   }
@@ -477,8 +500,9 @@ pauseBtn.addEventListener('click', () => {
     pauseBtn.textContent = '▶️ Weiter';
   } else {
     mainAudio.play().catch(()=>{});
-    if (selectedEffect?.id === 'rickroll' && rickAudio.currentTime > 0 && rickAudio.currentTime < (selectedEffect.duration||10)) {
-      rickAudio.play().catch(()=>{});
+if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
+  rickAudio.play().catch(()=>{});
+}
     }
     pauseBtn.textContent = '⏸️ Pause';
   }
@@ -490,7 +514,8 @@ revealCard.addEventListener('click', () => {
   const y = currentSong.year ? ` (${currentSong.year})` : '';
   revealCard.textContent = `${currentSong.title} – ${currentSong.artist}${y}`;
   revealCard.classList.add('flipped');
-  mainAudio.pause(); rickAudio.pause();
+  mainAudio.pause();
+stopRickOverlay(); // stellt mainAudio.volume wieder her & stoppt Rick sauber
   nextBtn.classList.remove('hidden');
 });
 

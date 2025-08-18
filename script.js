@@ -64,7 +64,7 @@ function stopRickOverlay(){
   if (!rickOverlayActive) return;
   rickAudio.pause();
   rickAudio.currentTime = 0;
-  mainAudio.volume = restoreMainVolume;
+  // KEIN Zurücksetzen von mainAudio.volume mehr
   rickOverlayActive = false;
 }
 
@@ -447,12 +447,10 @@ playBtn.addEventListener('click', () => {
 
       if (eff.type === 'segment'){
         playSegment(mainAudio, eff.start, eff.duration);
-     } else if (eff.type === 'overlay'){
-  // Hauptsong leicht ducken, beide parallel starten
-  restoreMainVolume = mainAudio.volume ?? 1;
-  mainAudio.volume = 0.85;
-
+  } else if (eff.type === 'overlay'){
+  // Beide parallel, gleiche Lautstärke
   rickAudio.currentTime = 0;
+  rickAudio.volume = mainAudio.volume ?? 1; // Rick = gleich laut wie Hauptsong
   rickOverlayActive = true;
 
   Promise.allSettled([

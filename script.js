@@ -1,6 +1,16 @@
 // ===========================
 // Musik-Trinkspiel – Logik
 // ===========================
+console.log("Check Songs geladen:", {
+  songs50s: typeof window.songs50s,
+  songs60s: typeof window.songs60s,
+  songs70s: typeof window.songs70s,
+  songs80s: typeof window.songs80s,
+  songs90s: typeof window.songs90s,
+  songs00s: typeof window.songs00s,
+  songs10s: typeof window.songs10s,
+  songs20s: typeof window.songs20s
+});
 
 // Feste Audio-Elemente (stabil für paralleles Abspielen)
 const mainAudio = document.getElementById('mainAudio');

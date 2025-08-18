@@ -20,7 +20,7 @@ const rickAudio = document.getElementById('rickAudio');
 const RICK_SRC = 'assets/rickroll.mp3';
 rickAudio.src = RICK_SRC;
 rickAudio.preload = 'auto';
-rickAudio.volume = 0.6;
+rickAudio.volume = 1.0;
 
 // (optional, aber hilfreich)
 let rickReady = false;

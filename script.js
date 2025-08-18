@@ -15,8 +15,20 @@ console.log("Check Songs geladen:", {
 // Feste Audio-Elemente (stabil für paralleles Abspielen)
 const mainAudio = document.getElementById('mainAudio');
 const rickAudio = document.getElementById('rickAudio');
-rickAudio.src = 'assets/mp3/rickroll.mp3';
-rickAudio.volume = 0.35;
+
+// *** HIER: exakter Pfad relativ zur index.html ***
+const RICK_SRC = 'assets/rickroll.mp3';
+rickAudio.src = RICK_SRC;
+rickAudio.preload = 'auto';
+rickAudio.volume = 0.6;
+
+// (optional, aber hilfreich)
+let rickReady = false;
+rickAudio.addEventListener('canplaythrough', () => rickReady = true);
+rickAudio.addEventListener('error', () => {
+  rickReady = false;
+  console.warn('Rick MP3 nicht gefunden:', rickAudio.src);
+});
 
 function setPreservePitch(el, keep){
   if ('preservesPitch' in el) el.preservesPitch = keep;

@@ -16,13 +16,13 @@ console.log("Check Songs geladen:", {
 const mainAudio = document.getElementById('mainAudio');
 const rickAudio = document.getElementById('rickAudio');
 
-// *** HIER: exakter Pfad relativ zur index.html ***
+// *** Exakter Pfad relativ zur index.html ***
 const RICK_SRC = 'assets/rickroll.mp3';
 rickAudio.src = RICK_SRC;
 rickAudio.preload = 'auto';
 rickAudio.volume = 1.0;
 
-// (optional, aber hilfreich)
+// (optional)
 let rickReady = false;
 rickAudio.addEventListener('canplaythrough', () => rickReady = true);
 rickAudio.addEventListener('error', () => {
@@ -57,26 +57,25 @@ let lastFinishedRoundNum = 0;     // für Subtitle "Nach Runde X von Y"
 
 // pro Runde: bereits verwendete Songs (key = id||src)
 let usedSrcThisRound = new Set();
-let rickOverlayActive = false;
-let restoreMainVolume = 1;
 
+// Rick-Overlay-State
+let rickOverlayActive = false;
 function stopRickOverlay(){
   if (!rickOverlayActive) return;
   rickAudio.pause();
   rickAudio.currentTime = 0;
-  // KEIN Zurücksetzen von mainAudio.volume mehr
   rickOverlayActive = false;
 }
 
 // --- DOM Refs ---
-const elStartMenu   = document.getElementById('startMenu');
-const elPlayerList  = document.getElementById('playerList');
-const elAddPlayer   = document.getElementById('addPlayer');
+const elStartMenu    = document.getElementById('startMenu');
+const elPlayerList   = document.getElementById('playerList');
+const elAddPlayer    = document.getElementById('addPlayer');
 const correctYearBtn = document.getElementById('correctYearBtn');
-const elStartGame   = document.getElementById('startGame');
+const elStartGame    = document.getElementById('startGame');
 
-const elDecadeOverlay = document.getElementById('decadeOverlay');
-const elDecadeText    = document.getElementById('decadeText');
+const elDecadeOverlay  = document.getElementById('decadeOverlay');
+const elDecadeText     = document.getElementById('decadeText');
 
 const elSummaryOverlay = document.getElementById('summaryOverlay');
 const elSummarySubtitle= document.getElementById('summarySubtitle');
@@ -109,28 +108,38 @@ const effectNote        = document.getElementById('effectNote');
 const fxOverlay = document.getElementById('fxOverlay');
 const fxText    = document.getElementById('fxText');
 
-// --- Dekaden ermitteln (nur die, die du eingebunden hast) ---
+// --- Dekaden ermitteln (tolerant bzgl. Benennungen) ---
 const decades = [];
-if (typeof songs50s   !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
-if (typeof songs60s   !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
-if (typeof songs70s   !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
-if (typeof songs80s   !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
-if (typeof songs90s   !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
-if (typeof songs2000s !== 'undefined') decades.push({key:'00s', label:'2000er', list:songs2000s});
-if (typeof songs2010s !== 'undefined') decades.push({key:'10s', label:'2010er', list:songs2010s});
-if (typeof songs2020s !== 'undefined') decades.push({key:'20s', label:'2020er', list:songs2020s});
+if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
+if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
+if (typeof songs70s !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
+if (typeof songs80s !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
+if (typeof songs90s !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
+
+// 2000er
+const D2000 = window.songs2000s ?? window.songs00s ?? window.songs00;
+if (D2000) decades.push({key:'00s', label:'2000er', list:D2000});
+
+// 2010er
+const D2010 = window.songs2010s ?? window.songs10s ?? window.songs10;
+if (D2010) decades.push({key:'10s', label:'2010er', list:D2010});
+
+// 2020er
+const D2020 = window.songs2020s ?? window.songs20s ?? window.songs20;
+if (D2020) decades.push({key:'20s', label:'2020er', list:D2020});
+
 if (decades.length === 0) decades.push({key:'local', label:'Songs', list: []}); // Fallback
 
 // ------------------------
 // Chips / Effekte
 // ------------------------
 const CHIPS = [
-  { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte',        score:{add:2}, type:'segment', start:'first', duration:10 },
-  { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte',        score:{add:3}, type:'segment', start:'last',  duration:10 },
-  { id:'random10', label:'Random 10s',  sub:'+2 Punkte',        score:{add:2},  type:'segment', start:'random',duration:10 },
-  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte',     score:{add:4}, type:'overlay', duration:null },
-  { id:'double',   label:'2× Speed',    sub:'+2 Punkte',         score:{add:2},  type:'speed',   rate:2 },
-  { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',        score:{add:1},  type:'segment', start:'first', duration:20 },
+  { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte', score:{add:2}, type:'segment', start:'first',  duration:10 },
+  { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte', score:{add:3}, type:'segment', start:'last',   duration:10 },
+  { id:'random10', label:'Random 10s',  sub:'+2 Punkte', score:{add:2}, type:'segment', start:'random', duration:10 },
+  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte', score:{add:4}, type:'overlay', /* duration: null */ },
+  { id:'double',   label:'2× Speed',    sub:'+2 Punkte', score:{add:2}, type:'speed',   rate:2 },
+  { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',  score:{add:1}, type:'segment', start:'first',  duration:20 },
 ];
 
 function buildChips(){
@@ -171,12 +180,13 @@ function stopAllAudio(){
   rickAudio.pause(); rickAudio.currentTime = 0;
   setPreservePitch(mainAudio, true);
   mainAudio.playbackRate = 1;
-  stopRickOverlay(); // << neu: Lautstärke zurück & Flag resetten
+  stopRickOverlay(); // Overlay sauber zurücksetzen
 }
 
 function clearClipTimer(){
   if (clipTimer){ clearTimeout(clipTimer); clipTimer = null; }
 }
+
 function updateRoundAndTurnLabels() {
   const dec = decades[roundIndex];
   const label = dec ? dec.label : `Runde ${roundIndex+1}`;
@@ -186,10 +196,12 @@ function updateRoundAndTurnLabels() {
   scoreValue.textContent = scores[currentPlayerIndex] ?? 0;
   turnPointsEl.textContent = turnBasePoints;
 }
+
 function getActiveDecadeSongs(){
   const dec = decades[roundIndex];
   return (dec && dec.list && dec.list.length) ? dec.list : [];
 }
+
 function pickSongForTurnAvoidingUsed(){
   const list = getActiveDecadeSongs();
   if (!list.length) return null;
@@ -200,6 +212,7 @@ function pickSongForTurnAvoidingUsed(){
   if (!usedSrcThisRound.has(key)) usedSrcThisRound.add(key);
   return chosen;
 }
+
 function assignSongForCurrentTurn(){
   currentSong = pickSongForTurnAvoidingUsed();
   if (currentSong){
@@ -447,27 +460,30 @@ playBtn.addEventListener('click', () => {
 
       if (eff.type === 'segment'){
         playSegment(mainAudio, eff.start, eff.duration);
-  } else if (eff.type === 'overlay'){
-  // Beide parallel, gleiche Lautstärke
-  rickAudio.currentTime = 0;
-  rickAudio.volume = mainAudio.volume ?? 1; // Rick = gleich laut wie Hauptsong
-  rickOverlayActive = true;
 
-  Promise.allSettled([
-    mainAudio.play(),
-    rickAudio.play()
-  ]).then(() => {
-    // Rick endet automatisch, wenn der Hauptsong endet
-    mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
-  }).catch(err => console.warn('Parallel play failed:', err));
-}
+      } else if (eff.type === 'overlay'){
+        // Beide parallel, gleiche Lautstärke
+        rickAudio.currentTime = 0;
+        rickAudio.volume = mainAudio.volume ?? 1; // Rick = gleich laut wie Hauptsong
+        rickOverlayActive = true;
+
+        Promise.allSettled([
+          mainAudio.play(),
+          rickAudio.play()
+        ]).then(() => {
+          // Rick endet automatisch, wenn der Hauptsong endet
+          mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
+        }).catch(err => console.warn('Parallel play failed:', err));
+
       } else if (eff.type === 'speed'){
         setPreservePitch(mainAudio, true);
         mainAudio.playbackRate = eff.rate || 2;
         mainAudio.play().catch(()=>{});
+
       } else {
         mainAudio.play().catch(()=>{});
       }
+
     } else {
       effectNote.textContent = '';
       mainAudio.play().catch(()=>{});
@@ -481,9 +497,8 @@ playBtn.addEventListener('click', () => {
   // Resume (gleicher Song)
   if (mainAudio.paused) {
     mainAudio.play().catch(()=>{});
-  if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
-    rickAudio.play().catch(()=>{});
-  }
+    if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
+      rickAudio.play().catch(()=>{});
     }
     pauseBtn.textContent = '⏸️ Pause';
   }
@@ -492,15 +507,15 @@ playBtn.addEventListener('click', () => {
 // Pause / Weiter
 pauseBtn.addEventListener('click', () => {
   if (!turnStarted) return;
+
   if (!mainAudio.paused) {
     mainAudio.pause();
     if (!rickAudio.paused) rickAudio.pause();
     pauseBtn.textContent = '▶️ Weiter';
   } else {
     mainAudio.play().catch(()=>{});
-if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
-  rickAudio.play().catch(()=>{});
-}
+    if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
+      rickAudio.play().catch(()=>{});
     }
     pauseBtn.textContent = '⏸️ Pause';
   }
@@ -512,11 +527,12 @@ revealCard.addEventListener('click', () => {
   const y = currentSong.year ? ` (${currentSong.year})` : '';
   revealCard.textContent = `${currentSong.title} – ${currentSong.artist}${y}`;
   revealCard.classList.add('flipped');
+
   mainAudio.pause();
-stopRickOverlay(); // stellt mainAudio.volume wieder her & stoppt Rick sauber
+  stopRickOverlay(); // Rick sauber stoppen
+
   nextBtn.classList.remove('hidden');
 });
-
 
 // ------------------------
 // Punkte-Buttons / Zugpunkte
@@ -528,7 +544,7 @@ function resetTurnState(resetChip=false){
 
   correctTitleBtn.disabled = false;
   correctArtistBtn.disabled = false;
-  correctYearBtn.disabled  = false;   // ← NEU
+  correctYearBtn.disabled  = false;
   wrongBtn.disabled = false;
 
   if (resetChip) {
@@ -545,17 +561,19 @@ function applyBasePointChange(delta){
   turnBasePoints += delta;
   turnPointsEl.textContent = String(turnBasePoints);
 }
+
 correctTitleBtn.addEventListener('click', () => {
   applyBasePointChange(1);
   wrongBtn.disabled = true;
   correctTitleBtn.disabled = true;
 });
+
 correctArtistBtn.addEventListener('click', () => {
   applyBasePointChange(1);
   wrongBtn.disabled = true;
   correctArtistBtn.disabled = true;
 });
-  
+
 correctYearBtn.addEventListener('click', () => {
   applyBasePointChange(1);
   wrongBtn.disabled = true;      // wenn irgendwas richtig ist, kein „Nichts gewusst“
@@ -567,19 +585,19 @@ wrongBtn.addEventListener('click', () => {
   turnPointsEl.textContent = '-2';
   correctTitleBtn.disabled = true;
   correctArtistBtn.disabled = true;
-  correctYearBtn.disabled  = true;   // ← NEU
+  correctYearBtn.disabled  = true;
   wrongBtn.disabled = true;
 });
 
 // Endgültige Rundensumme (mit Effekt) berechnen
 function computeTurnDelta(){
-  let subtotal = turnBasePoints; // -2, 0, 1, 2
+  let subtotal = turnBasePoints; // -2, 0, 1, 2, 3
   const eff = selectedEffect;
 
   if (subtotal <= 0) return subtotal;
   if (!eff) return subtotal;
 
   if (eff.score?.mult) return subtotal * eff.score.mult; // ×2
-  if (eff.score?.add)  return subtotal + eff.score.add;  // +1/+2
+  if (eff.score?.add)  return subtotal + eff.score.add;  // +1/+2/…
   return subtotal;
 }

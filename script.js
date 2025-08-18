@@ -40,6 +40,7 @@ let usedSrcThisRound = new Set();
 const elStartMenu   = document.getElementById('startMenu');
 const elPlayerList  = document.getElementById('playerList');
 const elAddPlayer   = document.getElementById('addPlayer');
+const correctYearBtn = document.getElementById('correctYearBtn');
 const elStartGame   = document.getElementById('startGame');
 
 const elDecadeOverlay = document.getElementById('decadeOverlay');
@@ -464,11 +465,13 @@ pauseBtn.addEventListener('click', () => {
 // Reveal / Lösung – stoppt Audio & zeigt „Weiter“
 revealCard.addEventListener('click', () => {
   if (!currentSong) return;
-  revealCard.textContent = `${currentSong.title} – ${currentSong.artist}`;
+  const y = currentSong.year ? ` (${currentSong.year})` : '';
+  revealCard.textContent = `${currentSong.title} – ${currentSong.artist}${y}`;
   revealCard.classList.add('flipped');
   mainAudio.pause(); rickAudio.pause();
   nextBtn.classList.remove('hidden');
 });
+
 
 // ------------------------
 // Punkte-Buttons / Zugpunkte
@@ -480,6 +483,7 @@ function resetTurnState(resetChip=false){
 
   correctTitleBtn.disabled = false;
   correctArtistBtn.disabled = false;
+  correctYearBtn.disabled  = false;   // ← NEU
   wrongBtn.disabled = false;
 
   if (resetChip) {
@@ -490,6 +494,7 @@ function resetTurnState(resetChip=false){
     chipGrid.classList.remove('disabled');
   }
 }
+
 function applyBasePointChange(delta){
   if (turnBasePoints === -2 && delta > 0) return;
   turnBasePoints += delta;
@@ -505,11 +510,19 @@ correctArtistBtn.addEventListener('click', () => {
   wrongBtn.disabled = true;
   correctArtistBtn.disabled = true;
 });
+  
+correctYearBtn.addEventListener('click', () => {
+  applyBasePointChange(1);
+  wrongBtn.disabled = true;      // wenn irgendwas richtig ist, kein „Nichts gewusst“
+  correctYearBtn.disabled = true;
+});
+
 wrongBtn.addEventListener('click', () => {
   turnBasePoints = -2;
   turnPointsEl.textContent = '-2';
   correctTitleBtn.disabled = true;
   correctArtistBtn.disabled = true;
+  correctYearBtn.disabled  = true;   // ← NEU
   wrongBtn.disabled = true;
 });
 

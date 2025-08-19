@@ -3,3 +3,5 @@ const songs70s = [
   { title: "Dancing Queen", artist: "ABBA", year:1976, src: "songs/70s/dancingqueen_abba.mp3" },
   { title: "Stayin Alive", artist: "Bee Gees", year:1977, src: "songs/70s/stayinalive_beegees.mp3" }
 ];
+window.SONG_DECADES = window.SONG_DECADES || [];
+window.SONG_DECADES.push({ key:'70s', label:'1970er', list: songs70s });

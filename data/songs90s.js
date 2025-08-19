@@ -3,3 +3,5 @@ const songs90s = [
   { title: "Smells Like Teen Spirit", artist: "Nirvana", year: 1991, src: "songs/90s/smellsliketeenspirit_nirvana.mp3" },
   { title: "Wonderwall", artist: "Oasis", year:1995, src: "songs/90s/wonderwall_oasis.mp3" }
 ];
+window.SONG_DECADES = window.SONG_DECADES || [];
+window.SONG_DECADES.push({ key:'90s', label:'1990er', list: songs90s });

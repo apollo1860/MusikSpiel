@@ -109,26 +109,29 @@ const fxOverlay = document.getElementById('fxOverlay');
 const fxText    = document.getElementById('fxText');
 
 // --- Dekaden ermitteln (tolerant bzgl. Benennungen) ---
-const decades = [];
-if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
-if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
-if (typeof songs70s !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
-if (typeof songs80s !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
-if (typeof songs90s !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
+// --- Dekaden ermitteln (über Registry) ---
+let decades = Array.isArray(window.SONG_DECADES) ? window.SONG_DECADES.slice() : [];
 
-// 2000er
-const D2000 = window.songs2000s ?? window.songs00s ?? window.songs00;
-if (D2000) decades.push({key:'00s', label:'2000er', list:D2000});
+// Fallback, falls Registry (noch) nicht verwendet wird
+if (!decades.length) {
+  if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
+  if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
+  if (typeof songs70s !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
+  if (typeof songs80s !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
+  if (typeof songs90s !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
 
-// 2010er
-const D2010 = window.songs2010s ?? window.songs10s ?? window.songs10;
-if (D2010) decades.push({key:'10s', label:'2010er', list:D2010});
+  const D2000 = window.songs2000s ?? window.songs00s ?? window.songs00;
+  if (D2000) decades.push({key:'00s', label:'2000er', list:D2000});
 
-// 2020er
-const D2020 = window.songs2020s ?? window.songs20s ?? window.songs20;
-if (D2020) decades.push({key:'20s', label:'2020er', list:D2020});
+  const D2010 = window.songs2010s ?? window.songs10s ?? window.songs10;
+  if (D2010) decades.push({key:'10s', label:'2010er', list:D2010});
 
-if (decades.length === 0) decades.push({key:'local', label:'Songs', list: []}); // Fallback
+  const D2020 = window.songs2020s ?? window.songs20s ?? window.songs20;
+  if (D2020) decades.push({key:'20s', label:'2020er', list:D2020});
+}
+
+console.log('Geladene Dekaden:', decades.map(d => `${d.key}(${d.list?.length||0})`));
+
 
 // ------------------------
 // Chips / Effekte

@@ -187,13 +187,15 @@ function decadeStartYearFromKey(key){
 // Chips / Effekte
 // ------------------------
 const CHIPS = [
-  { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte', score:{add:2}, type:'segment', start:'first',  duration:10 },
-  { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte', score:{add:3}, type:'segment', start:'last',   duration:10 },
-  { id:'random10', label:'Random 10s',  sub:'+2 Punkte', score:{add:2}, type:'segment', start:'random', duration:10 },
-  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte', score:{add:4}, type:'overlay' },
-  { id:'double',   label:'2× Speed',    sub:'+2 Punkte', score:{add:2}, type:'speed',   rate:2 },
-  { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',  score:{add:1}, type:'segment', start:'first',  duration:20 },
+  { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte',  score:{add:2},  type:'segment', start:'first',  duration:10 },
+  { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte',  score:{add:3},  type:'segment', start:'last',   duration:10 },
+  { id:'random10', label:'Random 10s',  sub:'+2 Punkte',  score:{add:2},  type:'segment', start:'random', duration:10 },
+  { id:'rickroll', label:'Rick Roll',   sub:'+4 Punkte',  score:{add:4},  type:'overlay' },
+  { id:'double',   label:'2× Speed',    sub:'+2 Punkte',  score:{add:2},  type:'speed',   rate:2 },
+  { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',   score:{add:1},  type:'segment', start:'first',  duration:20 },
+  { id:'first3',   label:'Erste 3s',    sub:'+10 Punkte', score:{add:10}, type:'segment', start:'first',  duration:3 },
 ];
+
 
 function buildChips(){
   chipGrid.innerHTML = '';

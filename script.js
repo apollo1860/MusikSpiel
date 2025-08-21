@@ -149,6 +149,8 @@ if (!decades.length) {
 }
 
 console.log('Geladene Dekaden:', decades.map(d => `${d.key}(${d.list?.length||0})`));
+// Feste Anzeige-Reihenfolge im Popup:
+const CHRONO_KEYS = ['50s','60s','70s','80s','90s','00s','10s','20s'];
 
 // ------------------------------------
 // Neue Logik: zufällige Dekaden je Spieler
@@ -314,6 +316,43 @@ function openBadgeModal(pIdx){
   if (!badgeModal) return;
   modalTitle.textContent = `Dekaden von ${players[pIdx]}`;
   badgeGrid.innerHTML = '';
+
+  // Spieler-spezifische Zufallsreihenfolge (für Statusberechnung)
+  const order = decadeOrderByPlayer[pIdx] || [];
+
+  // Anzuzeigende Dekaden: IMMER chronologisch
+  const chronoDecs = CHRONO_KEYS
+    .map(k => decades.find(d => d.key === k))
+    .filter(Boolean); // falls z.B. 50s nicht geladen ist
+
+  chronoDecs.forEach((dec) => {
+    const div = document.createElement('div');
+    div.className = 'badge';
+    div.dataset.dec = dec.key;
+    div.textContent = dec.key; // oder dec.label, wenn du lieber „1950er“ sehen möchtest
+
+    // Position dieser Dekade in der SPIELER-Reihenfolge ermitteln
+    const decIdx = decades.indexOf(dec);          // Index im globalen 'decades'
+    const playedPos = order.indexOf(decIdx);      // Position in der Spieler-Permutation (0..7)
+
+    // done/current Status: an der Spieler-Reihenfolge ausrichten
+    // - "done", wenn die Position bereits vor der aktuellen Runde lag
+    // - bei gleicher Runde: Spieler mit kleinerem Index ist schon „done“
+    const done = playedPos !== -1 && (
+      playedPos < roundIndex ||
+      (playedPos === roundIndex && pIdx < currentPlayerIndex)
+    );
+    const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
+
+    if (done) div.classList.add('done');
+    if (isCurrent) div.classList.add('current');
+
+    badgeGrid.appendChild(div);
+  });
+
+  badgeModal.style.display = 'flex';
+}
+
 
   const order = decadeOrderByPlayer[pIdx] || [];
   order.forEach((decIdx, pos)=>{

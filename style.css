@@ -62,7 +62,7 @@ body{
 /* Zwischenbilanz Overlay */
 #summaryOverlay{
   position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  padding:16px; z-index:9998; background:rgba(2,6,23,.6); /* slightly below decadeOverlay */
+  padding:16px; z-index:9998; background:rgba(2,6,23,.6);
 }
 .summary-card{
   width:100%; max-width:520px; background:var(--panel);
@@ -107,6 +107,15 @@ body{
 .toprow{display:flex; justify-content:space-between; align-items:flex-start; gap:8px}
 .pillwrap{display:flex; gap:8px; align-items:center}
 
+/* NEU: Namen-Leiste (nur Namen, klickbar) */
+.namesbar{display:flex; gap:10px; overflow-x:auto; padding:8px 0}
+.namebtn{
+  appearance:none; border:1px solid #263244; background:#0b1220; color:#e5e7eb;
+  padding:10px 12px; border-radius:12px; font-weight:800; cursor:pointer; white-space:nowrap;
+}
+.namebtn.current{outline:2px solid rgba(255,255,255,.25)}
+
+/* Panel – Chips usw. */
 .panel{
   background:var(--panel); border:1px solid #1f2937; border-radius:16px; padding:12px; margin-top:12px;
 }
@@ -156,7 +165,7 @@ body{
 /* Scrabble-Style FX Overlay */
 #fxOverlay{
   position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  pointer-events:none; z-index:9997; /* unter decadeOverlay & summaryOverlay */
+  pointer-events:none; z-index:9997;
 }
 #fxOverlay.hidden{display:none}
 #fxText{
@@ -169,4 +178,78 @@ body{
   0%   { opacity:0;   transform:scale(.7) }
   15%  { opacity:.92; transform:scale(1)  }
   70%  { opacity:.65; transform:scale(1.02) }
-  100%
+  100% { opacity:0;   transform:scale(1.08) }
+}
+
+/* NEU: Badge-Popup (Modal) */
+.modalWrap{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:60}
+.modal{background:#0b1220; border:1px solid #263244; border-radius:16px; padding:16px; max-width:360px; width:92%}
+.modal h3{margin:0 0 10px}
+.badgeGrid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+.badge{
+  display:flex; align-items:center; justify-content:center; height:48px; border-radius:12px;
+  font-weight:900; color:#03151a; border:1px solid rgba(255,255,255,.08)
+}
+.badge.done{filter:grayscale(1); opacity:.35}
+.badge.current{box-shadow:0 0 0 3px rgba(255,255,255,.28), 0 8px 18px rgba(0,0,0,.35)}
+/* Badge-Farben je Dekade */
+.badge[data-dec="50s"]{background:#f59e0b}
+.badge[data-dec="60s"]{background:#10b981}
+.badge[data-dec="70s"]{background:#f43f5e}
+.badge[data-dec="80s"]{background:#8b5cf6}
+.badge[data-dec="90s"]{background:#06b6d4}
+.badge[data-dec="00s"]{background:#22c55e}
+.badge[data-dec="10s"]{background:#eab308}
+.badge[data-dec="20s"]{background:#3b82f6}
+
+/* Kleine generische Buttonklasse fürs Modal */
+.btn{
+  appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer;
+  background:var(--accent); color:#022329;
+}
+
+/* NEU: Slot-Overlay – bunte Tafeln */
+.slotWrap{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:70}
+.slot{background:#0b1220; border:1px solid #263244; border-radius:18px; padding:18px 16px}
+.slotTitle{text-align:center; font-weight:900; margin-bottom:10px}
+.reelsRow{display:flex; gap:12px; justify-content:center; align-items:center}
+.reels{display:flex; gap:12px; justify-content:center}
+.reel{
+  width:72px; height:96px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+  overflow:hidden; isolation:isolate; border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 8px 22px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.06)
+}
+.reel:nth-child(1){
+  background:radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(255,107,107,.35), rgba(255,107,107,.08));
+  border-color: rgba(255,107,107,.55);
+  box-shadow: 0 12px 30px rgba(255,107,107,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.reel:nth-child(2){
+  background:radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(34,211,238,.35), rgba(34,211,238,.08));
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 12px 30px rgba(34,211,238,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.reel:nth-child(3){
+  background:radial-gradient(120% 120% at 100% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(167,139,250,.35), rgba(167,139,250,.08));
+  border-color: rgba(167,139,250,.55);
+  box-shadow: 0 12px 30px rgba(167,139,250,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.reel:nth-child(4){
+  background:radial-gradient(120% 120% at 0% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(245,158,11,.35), rgba(245,158,11,.08));
+  border-color: rgba(245,158,11,.55);
+  box-shadow: 0 12px 30px rgba(245,158,11,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.digit{
+  font-size:52px; font-weight:1000; letter-spacing:1px; color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.55), 0 0 24px rgba(255,255,255,.15)
+}
+.suffix{
+  font-size:52px; font-weight:1000; color:#fff; user-select:none;
+  text-shadow:0 2px 14px rgba(0,0,0,.6), 0 0 22px rgba(255,255,255,.18);
+  margin-left:6px;
+}
+.slotDecade{margin-top:10px; text-align:center; color:#94a3b8; font-size:12px}

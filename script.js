@@ -59,12 +59,20 @@ const usedByDecade = new Map();
 
 // Rick-Overlay-State
 let rickOverlayActive = false;
+let savedMainVol = 1; // merkt sich die Lautstärke des Hauptsongs
 function stopRickOverlay(){
   if (!rickOverlayActive) return;
-  rickAudio.pause();
-  rickAudio.currentTime = 0;
+  try {
+    rickAudio.pause();
+    rickAudio.currentTime = 0;
+  } catch(e){}
+  // Hauptsong-Volume zurücksetzen
+  if (typeof savedMainVol === 'number') {
+    mainAudio.volume = savedMainVol;
+  }
   rickOverlayActive = false;
 }
+
 
 // --- DOM Refs ---
 const elStartMenu    = document.getElementById('startMenu');
@@ -643,18 +651,24 @@ playBtn.addEventListener('click', () => {
       if (eff.type === 'segment'){
         playSegment(mainAudio, eff.start, eff.duration);
 
-      } else if (eff.type === 'overlay'){
-        // Beide parallel, gleiche Lautstärke
-        rickAudio.currentTime = 0;
-        rickAudio.volume = mainAudio.volume ?? 1;
-        rickOverlayActive = true;
+} else if (eff.type === 'overlay'){
+  // Beide parallel, Rick soll spürbar lauter wirken:
+  rickAudio.currentTime = 0;
 
-        Promise.allSettled([
-          mainAudio.play(),
-          rickAudio.play()
-        ]).then(() => {
-          mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
-        }).catch(err => console.warn('Parallel play failed:', err));
+  // Lautstärken merken/setzen
+  savedMainVol = mainAudio.volume ?? 1;
+  mainAudio.volume = 0.65;   // << Hauptsong abducken (stellbar 0.4–0.7)
+  rickAudio.volume = 1.0;    // << Rick maximal laut (Element-Volume max 1.0)
+
+  rickOverlayActive = true;
+
+  Promise.allSettled([
+    mainAudio.play(),
+    rickAudio.play()
+  ]).then(() => {
+    // Wenn Hauptsong endet, Overlay sauber stoppen & Lautstärke zurücksetzen
+    mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
+  }).catch(err => console.warn('Parallel play failed:', err));
 
       } else if (eff.type === 'speed'){
         setPreservePitch(mainAudio, true);

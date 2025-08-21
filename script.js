@@ -157,8 +157,14 @@ if (!decades.length) {
 }
 
 console.log('Geladene Dekaden:', decades.map(d => `${d.key}(${d.list?.length||0})`));
-// Feste Anzeige-Reihenfolge im Popup:
+
+// --- Feste Anzeige-Reihenfolge im Popup (chronologisch) ---
 const CHRONO_KEYS = ['50s','60s','70s','80s','90s','00s','10s','20s'];
+
+// Map: Dekade-Key -> Index im globalen 'decades'-Array
+const DECADE_INDEX_BY_KEY = Object.fromEntries(
+  decades.map((d, i) => [d.key, i])
+);
 
 // ------------------------------------
 // Neue Logik: zufällige Dekaden je Spieler
@@ -325,31 +331,41 @@ function openBadgeModal(pIdx){
   modalTitle.textContent = `Dekaden von ${players[pIdx]}`;
   badgeGrid.innerHTML = '';
 
-  // Spieler-spezifische Zufallsreihenfolge (für Statusberechnung)
+  // Spieler-spezifische Zufallsreihenfolge (Permutation von decades-Indizes)
   const order = decadeOrderByPlayer[pIdx] || [];
 
-  // Anzuzeigende Dekaden: IMMER chronologisch
+  // Anzeige ALWAYS chronologisch nach CHRONO_KEYS
   const chronoDecs = CHRONO_KEYS
-    .map(k => decades.find(d => d.key === k))
-    .filter(Boolean); // falls z.B. 50s nicht geladen ist
+    .map(key => decades[DECADE_INDEX_BY_KEY[key]])  // in 'decades' nachschlagen
+    .filter(Boolean);                               // fehlende raus
 
   chronoDecs.forEach((dec) => {
     const div = document.createElement('div');
     div.className = 'badge';
     div.dataset.dec = dec.key;
-    div.textContent = dec.key; // oder dec.label, wenn du lieber „1950er“ sehen möchtest
+    // Wenn du lieber "1950er" sehen willst: nimm dec.label
+    div.textContent = dec.key; 
 
     // Position dieser Dekade in der SPIELER-Reihenfolge ermitteln
-    const decIdx = decades.indexOf(dec);          // Index im globalen 'decades'
-    const playedPos = order.indexOf(decIdx);      // Position in der Spieler-Permutation (0..7)
+    const decIdx    = DECADE_INDEX_BY_KEY[dec.key];    // globaler Index in 'decades'
+    const playedPos = order.indexOf(decIdx);           // 0..7 (oder -1 falls nicht drin)
 
-    // done/current Status: an der Spieler-Reihenfolge ausrichten
-    // - "done", wenn die Position bereits vor der aktuellen Runde lag
-    // - bei gleicher Runde: Spieler mit kleinerem Index ist schon „done“
-    const done = playedPos !== -1 && (
+    // done/current Status am Spielfortschritt ausrichten:
+    // - "done": wenn diese Position < aktuelle Runde ODER gleiche Runde aber Spielerindex kleiner
+    const done = (playedPos !== -1) && (
       playedPos < roundIndex ||
       (playedPos === roundIndex && pIdx < currentPlayerIndex)
     );
+    const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
+
+    if (done)     div.classList.add('done');
+    if (isCurrent) div.classList.add('current');
+
+    badgeGrid.appendChild(div);
+  });
+
+  badgeModal.style.display = 'flex';
+}
     const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
 
     if (done) div.classList.add('done');

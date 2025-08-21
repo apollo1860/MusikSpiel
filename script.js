@@ -331,44 +331,33 @@ function openBadgeModal(pIdx){
   modalTitle.textContent = `Dekaden von ${players[pIdx]}`;
   badgeGrid.innerHTML = '';
 
-  // Spieler-spezifische Zufallsreihenfolge (Permutation von decades-Indizes)
+  // Spieler-spezifische Reihenfolge (Permutation globaler Dekaden-Indizes)
   const order = decadeOrderByPlayer[pIdx] || [];
 
-  // Anzeige ALWAYS chronologisch nach CHRONO_KEYS
+  // Anzeige IMMER chronologisch (50s → 20s), nur vorhandene Dekaden
   const chronoDecs = CHRONO_KEYS
-    .map(key => decades[DECADE_INDEX_BY_KEY[key]])  // in 'decades' nachschlagen
-    .filter(Boolean);                               // fehlende raus
+    .map(key => decades[DECADE_INDEX_BY_KEY[key]])
+    .filter(Boolean);
 
   chronoDecs.forEach((dec) => {
     const div = document.createElement('div');
     div.className = 'badge';
     div.dataset.dec = dec.key;
-    // Wenn du lieber "1950er" sehen willst: nimm dec.label
-    div.textContent = dec.key; 
+    // Alternativ: dec.label ("1950er")
+    div.textContent = dec.key;
 
-    // Position dieser Dekade in der SPIELER-Reihenfolge ermitteln
-    const decIdx    = DECADE_INDEX_BY_KEY[dec.key];    // globaler Index in 'decades'
-    const playedPos = order.indexOf(decIdx);           // 0..7 (oder -1 falls nicht drin)
+    const decIdx    = DECADE_INDEX_BY_KEY[dec.key]; // globaler Index
+    const playedPos = order.indexOf(decIdx);        // Position in Spieler-Permutation
 
-    // done/current Status am Spielfortschritt ausrichten:
-    // - "done": wenn diese Position < aktuelle Runde ODER gleiche Runde aber Spielerindex kleiner
+    // "done": wenn Position < aktuelle Runde
+    // oder gleiche Runde, aber dieser Spieler war in der Reihenfolge schon dran
     const done = (playedPos !== -1) && (
       playedPos < roundIndex ||
       (playedPos === roundIndex && pIdx < currentPlayerIndex)
     );
     const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
 
-    if (done)     div.classList.add('done');
-    if (isCurrent) div.classList.add('current');
-
-    badgeGrid.appendChild(div);
-  });
-
-  badgeModal.style.display = 'flex';
-}
-    const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
-
-    if (done) div.classList.add('done');
+    if (done)      div.classList.add('done');
     if (isCurrent) div.classList.add('current');
 
     badgeGrid.appendChild(div);
@@ -377,25 +366,6 @@ function openBadgeModal(pIdx){
   badgeModal.style.display = 'flex';
 }
 
-
-  const order = decadeOrderByPlayer[pIdx] || [];
-  order.forEach((decIdx, pos)=>{
-    const dec = decades[decIdx];
-    const div = document.createElement('div');
-    div.className = 'badge';
-    div.dataset.dec = dec.key;
-    div.textContent = dec.key;
-
-    // „Done“, wenn Position < aktuelle Runde, oder gleiche Runde aber Spielerindex kleiner
-    const done = (pos < roundIndex) || (pos === roundIndex && pIdx < currentPlayerIndex);
-    if (done) div.classList.add('done');
-    if (pIdx === currentPlayerIndex && pos === roundIndex) div.classList.add('current');
-
-    badgeGrid.appendChild(div);
-  });
-
-  badgeModal.style.display = 'flex';
-}
 if (closeModal) closeModal.addEventListener('click', ()=> badgeModal.style.display = 'none');
 if (badgeModal) badgeModal.addEventListener('click', (e)=>{
   if (e.target === badgeModal) badgeModal.style.display = 'none';
@@ -642,6 +612,7 @@ function playSegment(audio, startStrategy, lengthSec){
 }
 
 playBtn.addEventListener('click', () => {
+  // Falls noch kein Song vergeben ist (sollte eigentlich beim Handoff passiert sein)
   if (!currentSong) {
     assignSongForCurrentTurn();
     if (!currentSong) {
@@ -650,13 +621,15 @@ playBtn.addEventListener('click', () => {
     }
   }
 
+  // ERSTER Play in diesem Zug
   if (!turnStarted){
-    // Chips sperren (max. 1 Effekt)
+    // Chips sperren (max. 1 Effekt pro Lied)
     chipGrid.classList.add('disabled');
 
-    // Reset Audio-Zustand
+    // Audio-Grundzustand
     clearClipTimer();
-    rickAudio.pause(); rickAudio.currentTime = 0;
+    stopRickOverlay();                 // setzt auch Main-Volume zurück
+    rickAudio.currentTime = 0;
     setPreservePitch(mainAudio, true);
     mainAudio.playbackRate = 1;
 
@@ -665,26 +638,20 @@ playBtn.addEventListener('click', () => {
       effectNote.textContent = `Effekt aktiv: ${eff.sub}`;
 
       if (eff.type === 'segment'){
+        // feste Segmente (first/last/random N Sekunden)
         playSegment(mainAudio, eff.start, eff.duration);
 
-} else if (eff.type === 'overlay'){
-  // Beide parallel, Rick soll spürbar lauter wirken:
-  rickAudio.currentTime = 0;
+      } else if (eff.type === 'overlay'){
+        // Rick parallel & lauter wahrnehmbar: Hauptsong leicht ducken
+        rickAudio.currentTime = 0;
+        savedMainVol = mainAudio.volume ?? 1;
+        mainAudio.volume = 0.65; // stellbar 0.4–0.7
+        rickAudio.volume = 1.0;
+        rickOverlayActive = true;
 
-  // Lautstärken merken/setzen
-  savedMainVol = mainAudio.volume ?? 1;
-  mainAudio.volume = 0.65;   // << Hauptsong abducken (stellbar 0.4–0.7)
-  rickAudio.volume = 1.0;    // << Rick maximal laut (Element-Volume max 1.0)
-
-  rickOverlayActive = true;
-
-  Promise.allSettled([
-    mainAudio.play(),
-    rickAudio.play()
-  ]).then(() => {
-    // Wenn Hauptsong endet, Overlay sauber stoppen & Lautstärke zurücksetzen
-    mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
-  }).catch(err => console.warn('Parallel play failed:', err));
+        Promise.allSettled([ mainAudio.play(), rickAudio.play() ])
+          .then(() => mainAudio.addEventListener('ended', stopRickOverlay, { once:true }))
+          .catch(err => console.warn('Parallel play failed:', err));
 
       } else if (eff.type === 'speed'){
         setPreservePitch(mainAudio, true);
@@ -692,10 +659,11 @@ playBtn.addEventListener('click', () => {
         mainAudio.play().catch(()=>{});
 
       } else {
+        // Fallback: normal spielen
         mainAudio.play().catch(()=>{});
       }
-
     } else {
+      // Kein Effekt
       effectNote.textContent = '';
       mainAudio.play().catch(()=>{});
     }
@@ -704,6 +672,17 @@ playBtn.addEventListener('click', () => {
     pauseBtn.textContent = '⏸️ Pause';
     return;
   }
+
+  // RESUME (gleicher Song, gleicher Effekt)
+  if (mainAudio.paused) {
+    mainAudio.play().catch(()=>{});
+    if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
+      rickAudio.play().catch(()=>{});
+    }
+    pauseBtn.textContent = '⏸️ Pause';
+  }
+});
+
 
   // Resume (gleicher Song)
   if (mainAudio.paused) {

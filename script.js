@@ -1,5 +1,5 @@
 // ===========================
-// Musik-Trinkspiel – Logik
+// Musik-Trinkspiel – Logik (komplette Datei)
 // ===========================
 console.log("Check Songs geladen:", {
   songs50s: typeof window.songs50s,
@@ -7,22 +7,21 @@ console.log("Check Songs geladen:", {
   songs70s: typeof window.songs70s,
   songs80s: typeof window.songs80s,
   songs90s: typeof window.songs90s,
-  songs00s: typeof window.songs00s,
-  songs10s: typeof window.songs10s,
-  songs20s: typeof window.songs20s
+  songs00s: typeof window.songs00s || typeof window.songs2000s,
+  songs10s: typeof window.songs10s || typeof window.songs2010s,
+  songs20s: typeof window.songs20s || typeof window.songs2020s
 });
 
-// Feste Audio-Elemente (stabil für paralleles Abspielen)
+// ---------- Audio ----------
 const mainAudio = document.getElementById('mainAudio');
 const rickAudio = document.getElementById('rickAudio');
 
-// *** Exakter Pfad relativ zur index.html ***
+// Rick Roll Pfad relativ zu index.html
 const RICK_SRC = 'assets/rickroll.mp3';
 rickAudio.src = RICK_SRC;
 rickAudio.preload = 'auto';
 rickAudio.volume = 1.0;
 
-// (optional)
 let rickReady = false;
 rickAudio.addEventListener('canplaythrough', () => rickReady = true);
 rickAudio.addEventListener('error', () => {
@@ -36,7 +35,7 @@ function setPreservePitch(el, keep){
   if ('webkitPreservesPitch' in el) el.webkitPreservesPitch = keep;
 }
 
-// --- Spiel-States ---
+// ---------- Game State ----------
 let players = [];
 let scores = [];
 let roundIndex = 0;               // 0..(decades.length-1) – gemeinsame Rundenzahl
@@ -48,40 +47,37 @@ let currentSong = null;           // fest je Zug
 let turnStarted = false;          // wurde in diesem Zug schon gestartet?
 let clipTimer = null;
 
-let selectedEffect = null;        // optionaler Effekt
+let selectedEffect = null;        // optionaler Effekt (Chip)
 let turnBasePoints = 0;
 
-let summaryPending = false;       // Zwischenbilanz soll gezeigt werden
+let summaryPending = false;       // Zwischenbilanz vor nächster Runde
 let lastFinishedRoundNum = 0;     // für Subtitle "Nach Runde X von Y"
 
 // pro DEKADE: bereits verwendete Songs (key = id||src) – keine Wiederholung in der gleichen Dekade im ganzen Spiel
 const usedByDecade = new Map();
 
-// Rick-Overlay-State
+// Rick Overlay State (lauter als Hauptsong)
 let rickOverlayActive = false;
-let savedMainVol = 1; // merkt sich die Lautstärke des Hauptsongs
+let savedMainVol = 1;
 function stopRickOverlay(){
   if (!rickOverlayActive) return;
   try {
     rickAudio.pause();
     rickAudio.currentTime = 0;
   } catch(e){}
-  // Hauptsong-Volume zurücksetzen
   if (typeof savedMainVol === 'number') {
     mainAudio.volume = savedMainVol;
   }
   rickOverlayActive = false;
 }
 
-
-// --- DOM Refs ---
+// ---------- DOM ----------
 const elStartMenu    = document.getElementById('startMenu');
 const elPlayerList   = document.getElementById('playerList');
 const elAddPlayer    = document.getElementById('addPlayer');
-const correctYearBtn = document.getElementById('correctYearBtn');
 const elStartGame    = document.getElementById('startGame');
 
-const elDecadeOverlay  = document.getElementById('decadeOverlay');
+const elDecadeOverlay  = document.getElementById('decadeOverlay');   // (weiter vorhanden, aktuell nicht genutzt)
 const elDecadeText     = document.getElementById('decadeText');
 
 const elSummaryOverlay = document.getElementById('summaryOverlay');
@@ -96,7 +92,7 @@ const elGame        = document.getElementById('game');
 const elRoundInfo   = document.getElementById('round-info');
 const elTurnInfo    = document.getElementById('turn-info');
 const elCurrentName = document.getElementById('currentPlayerName');
-const namesBar      = document.getElementById('namesBar'); // NEW
+const namesBar      = document.getElementById('namesBar'); // Top-Leiste Namen
 
 const playBtn           = document.getElementById('playBtn');
 const pauseBtn          = document.getElementById('pauseBtn');
@@ -104,6 +100,7 @@ const revealCard        = document.getElementById('revealCard');
 const scoreValue        = document.getElementById('scoreValue');
 const correctTitleBtn   = document.getElementById('correctTitleBtn');
 const correctArtistBtn  = document.getElementById('correctArtistBtn');
+const correctYearBtn    = document.getElementById('correctYearBtn');
 const wrongBtn          = document.getElementById('wrongBtn');
 const nextBtn           = document.getElementById('nextBtn');
 
@@ -116,13 +113,13 @@ const effectNote        = document.getElementById('effectNote');
 const fxOverlay = document.getElementById('fxOverlay');
 const fxText    = document.getElementById('fxText');
 
-// --- Badge-Modal DOM ---
+// Badge-Modal (Popup)
 const badgeModal = document.getElementById('badgeModal');
 const badgeGrid  = document.getElementById('badgeGrid');
 const modalTitle = document.getElementById('modalTitle');
 const closeModal = document.getElementById('closeModal');
 
-// --- Slot-Overlay DOM ---
+// Slot-Overlay (Decade Slot)
 const slotOverlay = document.getElementById('slotOverlay');
 const slotDecadeLabel = document.getElementById('slotDecadeLabel');
 const d0 = document.getElementById('d0');
@@ -131,14 +128,12 @@ const d2 = document.getElementById('d2');
 const d3 = document.getElementById('d3');
 const SLOT_DIGITS = [d0,d1,d2,d3];
 
-// jede Tafel zeigt 0–9
 const DIGITS10 = ['0','1','2','3','4','5','6','7','8','9'];
 const SLOTS = Array.from({length:4}, () => DIGITS10.slice());
 
-// --- Dekaden ermitteln (über Registry) ---
+// ---------- Dekaden laden ----------
 let decades = Array.isArray(window.SONG_DECADES) ? window.SONG_DECADES.slice() : [];
 
-// Fallback, falls Registry (noch) nicht verwendet wird
 if (!decades.length) {
   if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
   if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
@@ -158,7 +153,7 @@ if (!decades.length) {
 
 console.log('Geladene Dekaden:', decades.map(d => `${d.key}(${d.list?.length||0})`));
 
-// --- Feste Anzeige-Reihenfolge im Popup (chronologisch) ---
+// Feste Anzeige-Reihenfolge im Popup (chronologisch)
 const CHRONO_KEYS = ['50s','60s','70s','80s','90s','00s','10s','20s'];
 
 // Map: Dekade-Key -> Index im globalen 'decades'-Array
@@ -166,9 +161,7 @@ const DECADE_INDEX_BY_KEY = Object.fromEntries(
   decades.map((d, i) => [d.key, i])
 );
 
-// ------------------------------------
-// Neue Logik: zufällige Dekaden je Spieler
-// ------------------------------------
+// ---------- Zufällige Dekaden je Spieler ----------
 let decadeOrderByPlayer = []; // Array pro Spieler: Permutation von [0..decades.length-1]
 
 function shuffle(arr){
@@ -195,13 +188,11 @@ function decadeStartYearFromKey(key){
     case '00s': return 2000;
     case '10s': return 2010;
     case '20s': return 2020;
-    default: return 1950;
+    default:    return 1950;
   }
 }
 
-// ------------------------
-// Chips / Effekte
-// ------------------------
+// ---------- Chips / Effekte ----------
 const CHIPS = [
   { id:'first10',  label:'Erste 10s',   sub:'+2 Punkte',  score:{add:2},  type:'segment', start:'first',  duration:10 },
   { id:'last10',   label:'Letzte 10s',  sub:'+3 Punkte',  score:{add:3},  type:'segment', start:'last',   duration:10 },
@@ -211,7 +202,6 @@ const CHIPS = [
   { id:'first20',  label:'Erste 20s',   sub:'+1 Punkt',   score:{add:1},  type:'segment', start:'first',  duration:20 },
   { id:'first3',   label:'Erste 3s',    sub:'+10 Punkte', score:{add:10}, type:'segment', start:'first',  duration:3 },
 ];
-
 
 function buildChips(){
   chipGrid.innerHTML = '';
@@ -240,10 +230,12 @@ function buildChips(){
   });
 }
 
-// ------------------------
-// Helpers
-// ------------------------
+// ---------- Helpers ----------
 function songKey(s){ return s?.id ?? s?.src; }
+
+function clearClipTimer(){
+  if (clipTimer){ clearTimeout(clipTimer); clipTimer = null; }
+}
 
 function stopAllAudio(){
   clearClipTimer();
@@ -251,14 +243,9 @@ function stopAllAudio(){
   rickAudio.pause(); rickAudio.currentTime = 0;
   setPreservePitch(mainAudio, true);
   mainAudio.playbackRate = 1;
-  stopRickOverlay(); // Overlay sauber zurücksetzen
+  stopRickOverlay();
 }
 
-function clearClipTimer(){
-  if (clipTimer){ clearTimeout(clipTimer); clipTimer = null; }
-}
-
-// Kopfzeilen-Labels aktualisieren (pro Spieler-Dekade)
 function updateRoundAndTurnLabels() {
   const dec = getDecadeForTurn(currentPlayerIndex, roundIndex);
   const label = dec ? dec.label : `Runde ${roundIndex+1}`;
@@ -304,9 +291,7 @@ function effectBadgeForCurrentTurn(){
   return null;
 }
 
-// ------------------------
-// Namenleiste + Badges
-// ------------------------
+// ---------- Namenleiste + Badges ----------
 function buildNamesBar(){
   if (!namesBar) return;
   namesBar.innerHTML = '';
@@ -326,15 +311,15 @@ function highlightCurrentName(){
   });
 }
 
+// ► KORRIGIERTE, EINDEUTIGE openBadgeModal (chronologische Anzeige!)
 function openBadgeModal(pIdx){
   if (!badgeModal) return;
   modalTitle.textContent = `Dekaden von ${players[pIdx]}`;
   badgeGrid.innerHTML = '';
 
-  // Spieler-spezifische Reihenfolge (Permutation globaler Dekaden-Indizes)
-  const order = decadeOrderByPlayer[pIdx] || [];
+  const order = decadeOrderByPlayer[pIdx] || []; // Spieler-spezifische Permutation der decades-Indizes
 
-  // Anzeige IMMER chronologisch (50s → 20s), nur vorhandene Dekaden
+  // Chronologische Anzeige nach CHRONO_KEYS
   const chronoDecs = CHRONO_KEYS
     .map(key => decades[DECADE_INDEX_BY_KEY[key]])
     .filter(Boolean);
@@ -343,21 +328,18 @@ function openBadgeModal(pIdx){
     const div = document.createElement('div');
     div.className = 'badge';
     div.dataset.dec = dec.key;
-    // Alternativ: dec.label ("1950er")
-    div.textContent = dec.key;
+    div.textContent = dec.key; // oder dec.label für "1950er"
 
-    const decIdx    = DECADE_INDEX_BY_KEY[dec.key]; // globaler Index
-    const playedPos = order.indexOf(decIdx);        // Position in Spieler-Permutation
+    const decIdx    = DECADE_INDEX_BY_KEY[dec.key]; // globaler Index in 'decades'
+    const playedPos = order.indexOf(decIdx);        // Position dieser Dekade in der Spieler-Reihenfolge (0..7)
 
-    // "done": wenn Position < aktuelle Runde
-    // oder gleiche Runde, aber dieser Spieler war in der Reihenfolge schon dran
     const done = (playedPos !== -1) && (
       playedPos < roundIndex ||
       (playedPos === roundIndex && pIdx < currentPlayerIndex)
     );
     const isCurrent = (pIdx === currentPlayerIndex && playedPos === roundIndex);
 
-    if (done)      div.classList.add('done');
+    if (done)     div.classList.add('done');
     if (isCurrent) div.classList.add('current');
 
     badgeGrid.appendChild(div);
@@ -371,9 +353,7 @@ if (badgeModal) badgeModal.addEventListener('click', (e)=>{
   if (e.target === badgeModal) badgeModal.style.display = 'none';
 });
 
-// ------------------------
-// Slot-Animation (0–9, Einrasten)
-// ------------------------
+// ---------- Slot-Animation ----------
 function showSlotForDecade(dec, onDone){
   if (!slotOverlay) { onDone && onDone(); return; }
   const baseYear = decadeStartYearFromKey(dec?.key || '50s'); // 1950, 1960, ...
@@ -429,9 +409,7 @@ function showSlotForDecade(dec, onDone){
   }
 }
 
-// ------------------------
-// Startmenü
-// ------------------------
+// ---------- Startmenü ----------
 elAddPlayer.addEventListener('click', () => {
   const row = document.createElement('div');
   row.className = 'name-row';
@@ -468,18 +446,14 @@ elStartGame.addEventListener('click', () => {
   resetTurnState(true);
   updateRoundAndTurnLabels();
 
-  // Wir benutzen ab jetzt den Slot pro Spieler – keine generische Dekaden-Overlay-Animation mehr
   proceedFlow();
 });
 
-// ------------------------
-// Runden- & Zug-Flow
-// ------------------------
+// ---------- Flow ----------
 function proceedFlow(){
-  // 1) Zwischenbilanz zuerst, falls angefordert
   if (summaryPending) { showSummary(); return; }
 
-  // 2) Spielende?
+  // Spielende?
   if (roundIndex >= decades.length) {
     alert('🎉 Spiel beendet! Danke fürs Mitspielen.');
     elGame.classList.add('hidden');
@@ -488,7 +462,6 @@ function proceedFlow(){
     return;
   }
 
-  // 3) Handoff-Screen für nächsten Spieler
   showHandoff();
 }
 
@@ -506,13 +479,12 @@ function showHandoff(){
   assignSongForCurrentTurn();
 
   const who = players[currentPlayerIndex];
-  document.getElementById('handoffText').textContent  = `Bitte das Handy an ${who} geben!`;
+  elHandoffText.textContent  = `Bitte das Handy an ${who} geben!`;
 
   elGame.classList.add('hidden');
   elHandoff.classList.remove('hidden');
 }
 
-// Beim Fortfahren: erst Slot-Animation für diese Spieler-Dekade, dann Spiel anzeigen
 document.getElementById('handoffContinue').addEventListener('click', () => {
   const dec = getDecadeForTurn(currentPlayerIndex, roundIndex);
   showSlotForDecade(dec, () => {
@@ -521,7 +493,7 @@ document.getElementById('handoffContinue').addEventListener('click', () => {
   });
 });
 
-// --- Zwischenbilanz Overlay ---
+// ---------- Zwischenbilanz ----------
 function showSummary(){
   const data = players.map((name, i)=>({ name, score: scores[i] ?? 0 }));
   data.sort((a,b)=> b.score - a.score);
@@ -557,9 +529,7 @@ elSummaryContinue.addEventListener('click', ()=>{
   proceedFlow();
 });
 
-// ------------------------
-// Weiter zum nächsten Spieler / nächste Runde
-// ------------------------
+// ---------- Next (nächster Spieler / nächste Runde) ----------
 nextBtn.addEventListener('click', () => {
   stopAllAudio();
 
@@ -577,15 +547,13 @@ nextBtn.addEventListener('click', () => {
     roundIndex++;
     lastFinishedRoundNum = roundIndex;
 
-    // Vor nächster Runde: Zwischenbilanz
+    // Zwischenbilanz vor nächster Runde
     summaryPending = true;
   }
   proceedFlow();
 });
 
-// ------------------------
-// Audio & Abspiel-Logik
-// ------------------------
+// ---------- Audio / Abspielen ----------
 function playSegment(audio, startStrategy, lengthSec){
   const startPlayback = ()=>{
     const dur = audio.duration || 0;
@@ -612,7 +580,6 @@ function playSegment(audio, startStrategy, lengthSec){
 }
 
 playBtn.addEventListener('click', () => {
-  // Falls noch kein Song vergeben ist (sollte eigentlich beim Handoff passiert sein)
   if (!currentSong) {
     assignSongForCurrentTurn();
     if (!currentSong) {
@@ -621,15 +588,13 @@ playBtn.addEventListener('click', () => {
     }
   }
 
-  // ERSTER Play in diesem Zug
   if (!turnStarted){
-    // Chips sperren (max. 1 Effekt pro Lied)
+    // Chips sperren (max. 1 Effekt)
     chipGrid.classList.add('disabled');
 
-    // Audio-Grundzustand
+    // Reset Audio-Zustand
     clearClipTimer();
-    stopRickOverlay();                 // setzt auch Main-Volume zurück
-    rickAudio.currentTime = 0;
+    stopRickOverlay(); // falls aus vorherigem Zug noch aktiv
     setPreservePitch(mainAudio, true);
     mainAudio.playbackRate = 1;
 
@@ -638,20 +603,24 @@ playBtn.addEventListener('click', () => {
       effectNote.textContent = `Effekt aktiv: ${eff.sub}`;
 
       if (eff.type === 'segment'){
-        // feste Segmente (first/last/random N Sekunden)
         playSegment(mainAudio, eff.start, eff.duration);
 
       } else if (eff.type === 'overlay'){
-        // Rick parallel & lauter wahrnehmbar: Hauptsong leicht ducken
+        // Rick lauter als Hauptsong – Hauptsong leicht abducken
         rickAudio.currentTime = 0;
+
         savedMainVol = mainAudio.volume ?? 1;
-        mainAudio.volume = 0.65; // stellbar 0.4–0.7
-        rickAudio.volume = 1.0;
+        mainAudio.volume = 0.65;   // ducking
+        rickAudio.volume = 1.0;    // laut
+
         rickOverlayActive = true;
 
-        Promise.allSettled([ mainAudio.play(), rickAudio.play() ])
-          .then(() => mainAudio.addEventListener('ended', stopRickOverlay, { once:true }))
-          .catch(err => console.warn('Parallel play failed:', err));
+        Promise.allSettled([
+          mainAudio.play(),
+          rickAudio.play()
+        ]).then(() => {
+          mainAudio.addEventListener('ended', stopRickOverlay, { once: true });
+        }).catch(err => console.warn('Parallel play failed:', err));
 
       } else if (eff.type === 'speed'){
         setPreservePitch(mainAudio, true);
@@ -659,11 +628,10 @@ playBtn.addEventListener('click', () => {
         mainAudio.play().catch(()=>{});
 
       } else {
-        // Fallback: normal spielen
         mainAudio.play().catch(()=>{});
       }
+
     } else {
-      // Kein Effekt
       effectNote.textContent = '';
       mainAudio.play().catch(()=>{});
     }
@@ -672,17 +640,6 @@ playBtn.addEventListener('click', () => {
     pauseBtn.textContent = '⏸️ Pause';
     return;
   }
-
-  // RESUME (gleicher Song, gleicher Effekt)
-  if (mainAudio.paused) {
-    mainAudio.play().catch(()=>{});
-    if (selectedEffect?.id === 'rickroll' && rickOverlayActive) {
-      rickAudio.play().catch(()=>{});
-    }
-    pauseBtn.textContent = '⏸️ Pause';
-  }
-});
-
 
   // Resume (gleicher Song)
   if (mainAudio.paused) {
@@ -724,9 +681,7 @@ revealCard.addEventListener('click', () => {
   nextBtn.classList.remove('hidden');
 });
 
-// ------------------------
-// Punkte-Buttons / Zugpunkte
-// ------------------------
+// ---------- Punkte ----------
 function resetTurnState(resetChip=false){
   turnBasePoints = 0;
   turnStarted = false;
@@ -781,13 +736,13 @@ wrongBtn.addEventListener('click', () => {
 
 // Endgültige Rundensumme (mit Effekt) berechnen
 function computeTurnDelta(){
-  let subtotal = turnBasePoints; // -2, 0, 1, 2, 3
+  let subtotal = turnBasePoints; // -2, 0, 1, 2, 3 ...
   const eff = selectedEffect;
 
   if (subtotal <= 0) return subtotal;
   if (!eff) return subtotal;
 
   if (eff.score?.mult) return subtotal * eff.score.mult; // ×2
-  if (eff.score?.add)  return subtotal + eff.score.add;  // +1/+2/…
+  if (eff.score?.add)  return subtotal + eff.score.add;  // +1/+2/… (+10 bei first3)
   return subtotal;
 }

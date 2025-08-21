@@ -60,6 +60,9 @@
         </div>
       </div>
 
+      <!-- NEU: Kopfzeile – nur die Spielernamen (klickbar für Badge-Popup) -->
+      <div id="namesBar" class="namesbar"></div>
+
       <!-- CHIPS / EFFEKTE -->
       <div class="panel">
         <h3>Chip wählen (optional, max. 1)</h3>
@@ -77,18 +80,46 @@
         <p>Spieler: <span id="currentPlayerName">—</span></p>
         <p>Rundenpunkte: <span id="turnPoints">0</span> <span id="effectNote" class="note"></span></p>
         <p>Gesamtpunkte: <span id="scoreValue">0</span></p>
-        
-<div class="score-btns">
-  <button id="correctTitleBtn">Titel richtig (+1)</button>
-  <button id="correctArtistBtn">Interpret richtig (+1)</button>
-  <button id="correctYearBtn">Jahr richtig (+1)</button>
-  <button id="wrongBtn" class="secondary">Nichts gewusst (−2)</button>
-</div>
 
+        <div class="score-btns">
+          <button id="correctTitleBtn">Titel richtig (+1)</button>
+          <button id="correctArtistBtn">Interpret richtig (+1)</button>
+          <button id="correctYearBtn">Jahr richtig (+1)</button>
+          <button id="wrongBtn" class="secondary">Nichts gewusst (−2)</button>
+        </div>
+      </div> <!-- <-- FIX: Score-Wrapper richtig schließen -->
 
       <div class="nextwrap">
         <button id="nextBtn" class="hidden">Weiter ➜</button>
       </div>
+    </div>
+  </section>
+
+  <!-- NEU: BADGE-POPUP (Namen -> Klick zeigt alle Dekaden-Badges) -->
+  <section id="badgeModal" class="modalWrap" aria-hidden="true">
+    <div class="modal">
+      <h3 id="modalTitle">Dekaden von …</h3>
+      <div id="badgeGrid" class="badgeGrid"></div>
+      <div style="text-align:right;margin-top:12px">
+        <button id="closeModal" class="btn">Schließen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEU: SLOT-OVERLAY (bunte Reels 0–9 + „er“) -->
+  <section id="slotOverlay" class="slotWrap" aria-hidden="true">
+    <div class="slot">
+      <div class="slotTitle">Dekade wird ermittelt…</div>
+      <div class="reelsRow">
+        <div class="reels">
+          <div class="reel"><div class="digit" id="d0">1</div></div>
+          <div class="reel"><div class="digit" id="d1">9</div></div>
+          <div class="reel"><div class="digit" id="d2">5</div></div>
+          <div class="reel"><div class="digit" id="d3">0</div></div>
+        </div>
+        <div class="suffix">er</div>
+      </div>
+      <div class="slotDecade" id="slotDecadeLabel">—</div>
     </div>
   </section>
 

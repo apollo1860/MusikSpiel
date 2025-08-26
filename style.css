@@ -208,51 +208,7 @@ body{
   background:var(--accent); color:#022329;
 }
 
-/* NEU: Slot-Overlay – bunte Tafeln */
-.slotWrap{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:70}
-.slot{background:#0b1220; border:1px solid #263244; border-radius:18px; padding:18px 16px}
-.slotTitle{text-align:center; font-weight:900; margin-bottom:10px}
-.reelsRow{display:flex; gap:12px; justify-content:center; align-items:center}
-.reels{display:flex; gap:12px; justify-content:center}
-.reel{
-  width:72px; height:96px; border-radius:14px; display:flex; align-items:center; justify-content:center;
-  overflow:hidden; isolation:isolate; border:1px solid rgba(255,255,255,.15);
-  box-shadow:0 8px 22px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.06)
-}
-.reel:nth-child(1){
-  background:radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
-             linear-gradient(160deg, rgba(255,107,107,.35), rgba(255,107,107,.08));
-  border-color: rgba(255,107,107,.55);
-  box-shadow: 0 12px 30px rgba(255,107,107,.18), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.reel:nth-child(2){
-  background:radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
-             linear-gradient(160deg, rgba(34,211,238,.35), rgba(34,211,238,.08));
-  border-color: rgba(34,211,238,.55);
-  box-shadow: 0 12px 30px rgba(34,211,238,.18), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.reel:nth-child(3){
-  background:radial-gradient(120% 120% at 100% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
-             linear-gradient(160deg, rgba(167,139,250,.35), rgba(167,139,250,.08));
-  border-color: rgba(167,139,250,.55);
-  box-shadow: 0 12px 30px rgba(167,139,250,.18), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.reel:nth-child(4){
-  background:radial-gradient(120% 120% at 0% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
-             linear-gradient(160deg, rgba(245,158,11,.35), rgba(245,158,11,.08));
-  border-color: rgba(245,158,11,.55);
-  box-shadow: 0 12px 30px rgba(245,158,11,.18), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.digit{
-  font-size:52px; font-weight:1000; letter-spacing:1px; color:#fff;
-  text-shadow:0 2px 12px rgba(0,0,0,.55), 0 0 24px rgba(255,255,255,.15)
-}
-.suffix{
-  font-size:52px; font-weight:1000; color:#fff; user-select:none;
-  text-shadow:0 2px 14px rgba(0,0,0,.6), 0 0 22px rgba(255,255,255,.18);
-  margin-left:6px;
-}
-.slotDecade{margin-top:10px; text-align:center; color:#94a3b8; font-size:12px}
+
 /* === Mobile-Tuning & Z-Index-Sicherheit für Slot-Overlay === */
 /* Overlay-Hintergrund (ID ODER Klasse möglich) */
 #slotOverlay,
@@ -266,7 +222,6 @@ body{
   z-index: 9998;                 /* unter decadeOverlay (9999), über Rest */
   padding: 16px;
 }
-
 /* Karte/Container im Overlay (deine Klasse .slot behalten) */
 #slotOverlay .slot,
 .slotWrap .slot {

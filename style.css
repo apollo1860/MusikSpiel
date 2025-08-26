@@ -253,3 +253,59 @@ body{
   margin-left:6px;
 }
 .slotDecade{margin-top:10px; text-align:center; color:#94a3b8; font-size:12px}
+/* === Mobile-Tuning & Z-Index-Sicherheit für Slot-Overlay === */
+/* Overlay-Hintergrund (ID ODER Klasse möglich) */
+#slotOverlay,
+.slotWrap {
+  position: fixed;
+  inset: 0;
+  display: none;                 /* JS setzt auf 'flex' beim Anzeigen */
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.65);
+  z-index: 9998;                 /* unter decadeOverlay (9999), über Rest */
+  padding: 16px;
+}
+
+/* Karte/Container im Overlay (deine Klasse .slot behalten) */
+#slotOverlay .slot,
+.slotWrap .slot {
+  width: clamp(280px, 85vw, 520px);   /* kleiner auf Phones */
+  border-radius: 18px;
+  padding: 16px;
+}
+
+/* Reels kompakter */
+#slotOverlay .reel,
+.slotWrap .reel {
+  width: clamp(46px, 17vw, 72px);
+  height: clamp(60px, 20vw, 96px);
+}
+
+/* Ziffern/Suffix skalieren für Phones */
+#slotOverlay .digit,
+.slotWrap .digit,
+#slotOverlay .suffix,
+.slotWrap .suffix {
+  font-size: clamp(28px, 10vw, 52px);
+}
+
+/* Label kleiner */
+#slotOverlay .slotDecade,
+.slotWrap .slotDecade {
+  font-size: clamp(12px, 4vw, 14px);
+}
+
+/* Falls Overlay doch mal „hängenbleibt“, blockiert es keine Klicks */
+#slotOverlay.hidden,
+.slotWrap.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* Sicherheit: Karte & Next-Button stehen über normalem Content */
+#game .card,
+#nextBtn {
+  position: relative;
+  z-index: 2;
+}

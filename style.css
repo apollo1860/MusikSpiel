@@ -1,4 +1,4 @@
-:root{
+:root{ 
   --bg:#0f172a;
   --panel:#111827;
   --muted:#94a3b8;
@@ -208,54 +208,121 @@ body{
   background:var(--accent); color:#022329;
 }
 
-
-/* === Mobile-Tuning & Z-Index-Sicherheit für Slot-Overlay === */
-/* Overlay-Hintergrund (ID ODER Klasse möglich) */
+/* =========================================================
+   SLOT-OVERLAY – bunt & horizontal (Glücksspiel-Automat)
+   kompakter für Smartphones, damit nichts abgeschnitten wird
+   ========================================================= */
 #slotOverlay,
-.slotWrap {
-  position: fixed;
-  inset: 0;
-  display: none;                 /* JS setzt auf 'flex' beim Anzeigen */
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,.65);
-  z-index: 9998;                 /* unter decadeOverlay (9999), über Rest */
-  padding: 16px;
+.slotWrap{
+  position:fixed;
+  inset:0;
+  display:none;                 /* JS zeigt mit display:flex */
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.65);
+  z-index:9998;                 /* unter decadeOverlay (9999) */
+  padding:16px;
 }
-/* Karte/Container im Overlay (deine Klasse .slot behalten) */
+
 #slotOverlay .slot,
-.slotWrap .slot {
-  width: clamp(280px, 85vw, 520px);   /* kleiner auf Phones */
-  border-radius: 18px;
-  padding: 16px;
+.slotWrap .slot{
+  width:clamp(280px, 88vw, 560px);     /* kleiner auf Phones */
+  background:#0b1220;
+  border:1px solid #263244;
+  border-radius:18px;
+  padding:16px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
 }
 
-/* Reels kompakter */
+#slotOverlay .slotTitle,
+.slotWrap .slotTitle{
+  text-align:center; font-weight:900; margin-bottom:10px;
+  font-size:clamp(14px, 3.8vw, 18px);
+  color:#e5e7eb;
+}
+
+#slotOverlay .reelsRow,
+.slotWrap .reelsRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;            /* Abstand zwischen Reels und "er" */
+}
+
+#slotOverlay .reels,
+.slotWrap .reels{
+  display:flex;
+  gap:12px;            /* Abstand zwischen den 4 Tafeln */
+}
+
+/* einzelne bunte Tafeln */
 #slotOverlay .reel,
-.slotWrap .reel {
-  width: clamp(46px, 17vw, 72px);
-  height: clamp(60px, 20vw, 96px);
+.slotWrap .reel{
+  width:clamp(44px, 15vw, 68px);
+  height:clamp(56px, 18vw, 92px);
+  border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; isolation:isolate;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 8px 22px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.06);
 }
 
-/* Ziffern/Suffix skalieren für Phones */
+/* Farben pro Tafel (1..4) */
+#slotOverlay .reel:nth-child(1),
+.slotWrap .reel:nth-child(1){
+  background:radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(255,107,107,.35), rgba(255,107,107,.08));
+  border-color: rgba(255,107,107,.55);
+  box-shadow: 0 12px 30px rgba(255,107,107,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+#slotOverlay .reel:nth-child(2),
+.slotWrap .reel:nth-child(2){
+  background:radial-gradient(120% 120% at 0% 0%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(34,211,238,.35), rgba(34,211,238,.08));
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 12px 30px rgba(34,211,238,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+#slotOverlay .reel:nth-child(3),
+.slotWrap .reel:nth-child(3){
+  background:radial-gradient(120% 120% at 100% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(167,139,250,.35), rgba(167,139,250,.08));
+  border-color: rgba(167,139,250,.55);
+  box-shadow: 0 12px 30px rgba(167,139,250,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+#slotOverlay .reel:nth-child(4),
+.slotWrap .reel:nth-child(4){
+  background:radial-gradient(120% 120% at 0% 100%, rgba(255,255,255,.08) 0%, transparent 50%),
+             linear-gradient(160deg, rgba(245,158,11,.35), rgba(245,158,11,.08));
+  border-color: rgba(245,158,11,.55);
+  box-shadow: 0 12px 30px rgba(245,158,11,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* Zahlen + "er" groß & mit Glow */
 #slotOverlay .digit,
-.slotWrap .digit,
+.slotWrap .digit{
+  font-size:clamp(26px, 9.5vw, 50px);
+  font-weight:1000; letter-spacing:1px; color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.55), 0 0 24px rgba(255,255,255,.15);
+}
 #slotOverlay .suffix,
-.slotWrap .suffix {
-  font-size: clamp(28px, 10vw, 52px);
+.slotWrap .suffix{
+  font-size:clamp(26px, 9.5vw, 50px);
+  font-weight:1000; color:#fff; user-select:none;
+  text-shadow:0 2px 14px rgba(0,0,0,.6), 0 0 22px rgba(255,255,255,.18);
+  margin-left:8px;
 }
 
-/* Label kleiner */
 #slotOverlay .slotDecade,
-.slotWrap .slotDecade {
-  font-size: clamp(12px, 4vw, 14px);
+.slotWrap .slotDecade{
+  margin-top:10px; text-align:center; color:#94a3b8;
+  font-size:clamp(12px, 3.6vw, 14px);
 }
 
-/* Falls Overlay doch mal „hängenbleibt“, blockiert es keine Klicks */
+/* failsafe */
 #slotOverlay.hidden,
-.slotWrap.hidden {
-  display: none !important;
-  pointer-events: none !important;
+.slotWrap.hidden{
+  display:none !important; 
+  pointer-events:none !important;
 }
 
 /* Sicherheit: Karte & Next-Button stehen über normalem Content */

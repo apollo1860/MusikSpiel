@@ -261,7 +261,11 @@ function assignSongForCurrentTurn(){
   const dec = getDecadeForTurn(currentPlayerIndex, roundIndex);
   if (!dec){ currentSong = null; return; }
   const list = dec.list || [];
-  if (!list.length){ currentSong = null; return; }
+  if (!list.length){
+    console.warn('Keine Songs in Dekade:', dec.key, dec.label);
+    currentSong = null; 
+    return;
+  }
 
   const set = usedByDecade.get(dec.key) || new Set();
   const unused = list.filter(s => !set.has(songKey(s)));
@@ -331,7 +335,7 @@ function openBadgeModal(pIdx){
     div.textContent = dec.key; // oder dec.label für "1950er"
 
     const decIdx    = DECADE_INDEX_BY_KEY[dec.key]; // globaler Index in 'decades'
-    const playedPos = order.indexOf(decIdx);        // Position dieser Dekade in der Spieler-Reihenfolge (0..7)
+    const playedPos = order.indexOf(decIdx);        // Position dieser Dekade in der Spieler-Reihe (0..7)
 
     const done = (playedPos !== -1) && (
       playedPos < roundIndex ||
@@ -353,12 +357,12 @@ if (badgeModal) badgeModal.addEventListener('click', (e)=>{
   if (e.target === badgeModal) badgeModal.style.display = 'none';
 });
 
-// ---------- Slot-Animation ----------
+// ---------- Slot-Animation (bunt/quer; Größe via CSS) ----------
 function showSlotForDecade(dec, onDone){
   if (!slotOverlay) { onDone && onDone(); return; }
   const baseYear = decadeStartYearFromKey(dec?.key || '50s'); // 1950, 1960, ...
   slotDecadeLabel.textContent = dec?.label || '—';
-  slotOverlay.style.display = 'flex';
+  slotOverlay.style.display = 'flex'; // CSS macht es kleiner & quer/bunt
 
   const target = String(baseYear).padStart(4,'0').split(''); // ["1","9","5","0"]
 
@@ -395,7 +399,10 @@ function showSlotForDecade(dec, onDone){
           if (SLOTS[i][idx[i]] === tChar){
             finished++;
             if (finished === 4){
-              setTimeout(()=>{ slotOverlay.style.display = 'none'; onDone && onDone(); }, 500);
+              setTimeout(()=>{ 
+                slotOverlay.style.display = 'none'; 
+                onDone && onDone(); 
+              }, 500);
             }
             return;
           }
@@ -668,16 +675,23 @@ pauseBtn.addEventListener('click', () => {
   }
 });
 
-// Reveal / Lösung – stoppt Audio & zeigt „Weiter“
+// Reveal / Lösung – stoppt Audio & zeigt „Weiter“ (robust, auch ohne Song)
 revealCard.addEventListener('click', () => {
-  if (!currentSong) return;
-  const y = currentSong.year ? ` (${currentSong.year})` : '';
-  revealCard.textContent = `${currentSong.title} – ${currentSong.artist}${y}`;
-  revealCard.classList.add('flipped');
-
+  // Immer Audio stoppen
   mainAudio.pause();
   stopRickOverlay(); // Rick sauber stoppen
 
+  if (!currentSong) {
+    // Fallback, damit "Weiter" nie ausbleibt:
+    revealCard.textContent = 'Kein Song für diese Dekade hinterlegt';
+    revealCard.classList.add('flipped');
+    nextBtn.classList.remove('hidden');
+    return;
+  }
+
+  const y = currentSong.year ? ` (${currentSong.year})` : '';
+  revealCard.textContent = `${currentSong.title} – ${currentSong.artist}${y}`;
+  revealCard.classList.add('flipped');
   nextBtn.classList.remove('hidden');
 });
 

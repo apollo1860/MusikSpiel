@@ -38,7 +38,7 @@ function setPreservePitch(el, keep){
 // ---------- Game State ----------
 let players = [];
 let scores = [];
-let roundIndex = 0;               // 0..(roundOrder.length-1) – gemeinsame Rundenzahl
+let roundIndex = 0;               // 0..(roundOrder.length-1)
 let starterIndex = 0;             // wer startet die Runde (rotiert)
 let turnInRound = 0;              // 0..players.length-1 innerhalb einer Runde
 let currentPlayerIndex = 0;
@@ -131,39 +131,65 @@ const SLOT_DIGITS = [d0,d1,d2,d3];
 const DIGITS10 = ['0','1','2','3','4','5','6','7','8','9'];
 const SLOTS = Array.from({length:4}, () => DIGITS10.slice());
 
-// ---------- Dekaden laden ----------
-let decades = Array.isArray(window.SONG_DECADES) ? window.SONG_DECADES.slice() : [];
-
-if (!decades.length) {
-  if (typeof songs50s !== 'undefined') decades.push({key:'50s', label:'1950er', list:songs50s});
-  if (typeof songs60s !== 'undefined') decades.push({key:'60s', label:'1960er', list:songs60s});
-  if (typeof songs70s !== 'undefined') decades.push({key:'70s', label:'1970er', list:songs70s});
-  if (typeof songs80s !== 'undefined') decades.push({key:'80s', label:'1980er', list:songs80s});
-  if (typeof songs90s !== 'undefined') decades.push({key:'90s', label:'1990er', list:songs90s});
-
-  const D2000 = window.songs2000s ?? window.songs00s ?? window.songs00;
-  if (D2000) decades.push({key:'00s', label:'2000er', list:D2000});
-
-  const D2010 = window.songs2010s ?? window.songs10s ?? window.songs10;
-  if (D2010) decades.push({key:'10s', label:'2010er', list:D2010});
-
-  const D2020 = window.songs2020s ?? window.songs20s ?? window.songs20;
-  if (D2020) decades.push({key:'20s', label:'2020er', list:D2020});
-}
-
-console.log('Geladene Dekaden:', decades.map(d => `${d.key}(${d.list?.length||0})`));
-
-// Feste Anzeige-Reihenfolge im Popup (chronologisch)
+// ---------- Dekaden laden (immer 8 Schlüssel anlegen) ----------
 const CHRONO_KEYS = ['50s','60s','70s','80s','90s','00s','10s','20s'];
 
-// Map: Dekade-Key -> Index im globalen 'decades'-Array
-const DECADE_INDEX_BY_KEY = Object.fromEntries(
-  decades.map((d, i) => [d.key, i])
+function arrOrEmpty(x){ return Array.isArray(x) ? x : []; }
+
+// 1) Wenn Registry existiert, übernehmen – danach fehlende Dekaden auffüllen
+let decades = [];
+if (Array.isArray(window.SONG_DECADES) && window.SONG_DECADES.length){
+  const byKey = Object.fromEntries(window.SONG_DECADES.map(d => [d.key, d]));
+  CHRONO_KEYS.forEach(k => {
+    const d = byKey[k];
+    if (d) {
+      decades.push({ key: d.key, label: d.label || keyToLabel(k), list: Array.isArray(d.list)? d.list : [] });
+    } else {
+      decades.push({ key: k, label: keyToLabel(k), list: [] });
+    }
+  });
+} else {
+  // 2) Fallback: über globale Arrays – fehlende Dekaden als leere Liste ergänzen
+  const D2000 = window.songs2000s ?? window.songs00s ?? window.songs00;
+  const D2010 = window.songs2010s ?? window.songs10s ?? window.songs10;
+  const D2020 = window.songs2020s ?? window.songs20s ?? window.songs20;
+
+  const guess = {
+    '50s': arrOrEmpty(window.songs50s),
+    '60s': arrOrEmpty(window.songs60s),
+    '70s': arrOrEmpty(window.songs70s),
+    '80s': arrOrEmpty(window.songs80s),
+    '90s': arrOrEmpty(window.songs90s),
+    '00s': arrOrEmpty(D2000),
+    '10s': arrOrEmpty(D2010),
+    '20s': arrOrEmpty(D2020),
+  };
+  CHRONO_KEYS.forEach(k => decades.push({ key:k, label:keyToLabel(k), list: guess[k] }));
+}
+
+function keyToLabel(key){
+  switch(key){
+    case '50s': return '1950er';
+    case '60s': return '1960er';
+    case '70s': return '1970er';
+    case '80s': return '1980er';
+    case '90s': return '1990er';
+    case '00s': return '2000er';
+    case '10s': return '2010er';
+    case '20s': return '2020er';
+    default:    return key;
+  }
+}
+
+console.log('Geladene Dekaden (mit Längen):',
+  decades.map(d => `${d.key}:${d.list?.length||0}`).join(', ')
 );
 
-// ---------- NEU: globale Rundendekaden (genau 8, zufällig, ohne Fallback 50s) ----------
-let roundOrder = []; // enthält Dekaden-Indizes (z.B. [3,0,6,2,1,5,4,7])
+// Map: Dekade-Key -> Index im globalen 'decades'-Array
+let DECADE_INDEX_BY_KEY = Object.fromEntries(decades.map((d, i) => [d.key, i]));
 
+// ---------- Rundendekaden (genau 8, zufällig, ohne Wiederholung) ----------
+const MAX_ROUNDS = 8;
 function shuffle(arr){
   for(let i=arr.length-1; i>0; i--){
     const j = Math.floor(Math.random()*(i+1));
@@ -171,18 +197,18 @@ function shuffle(arr){
   }
   return arr;
 }
+// sichere Indizes in CHRONO-Reihenfolge
+const ALL_INDICES = CHRONO_KEYS.map(k => DECADE_INDEX_BY_KEY[k]);
+let roundOrder = shuffle(ALL_INDICES.slice()); // zufällige Permutation von 8 eindeutigen Indizes
 
-// Welche Dekade wird in dieser Runde gespielt?
+// ---------- Utilities ----------
 function getDecadeForRound(rIdx){
   const decIdx = roundOrder[rIdx];
   return decades[decIdx];
 }
-
-// Bequem: aktuell aktive Dekade (Runde)
 function getActiveDecade(){
   return getDecadeForRound(roundIndex);
 }
-
 function decadeStartYearFromKey(key){
   switch(key){
     case '50s': return 1950;
@@ -254,7 +280,7 @@ function stopAllAudio(){
 function updateRoundAndTurnLabels() {
   const dec = getActiveDecade();
   const label = dec ? dec.label : `Runde ${roundIndex+1}`;
-  elRoundInfo.textContent = `Runde ${roundIndex+1} – ${label}`;
+  elRoundInfo.textContent = `Runde ${roundIndex+1}/${roundOrder.length} – ${label}`;
   elTurnInfo.textContent  = `Dran: ${players[currentPlayerIndex] || '—'}`;
   elCurrentName.textContent = players[currentPlayerIndex] || '—';
   scoreValue.textContent = scores[currentPlayerIndex] ?? 0;
@@ -326,7 +352,7 @@ function openBadgeModal(pIdx){
   modalTitle.textContent = `Dekaden von ${players[pIdx]}`;
   badgeGrid.innerHTML = '';
 
-  // Chronologische Anzeige nach CHRONO_KEYS (nur vorhandene Dekaden)
+  // Chronologische Anzeige nach CHRONO_KEYS (immer 8)
   const chronoDecs = CHRONO_KEYS
     .map(key => decades[DECADE_INDEX_BY_KEY[key]])
     .filter(Boolean);
@@ -441,9 +467,11 @@ elStartGame.addEventListener('click', () => {
   players = names;
   scores = new Array(players.length).fill(0);
 
-  // Globale Reihenfolge von GENAU 8 Dekaden (ohne Wiederholung)
-  const MAX_ROUNDS = 8;
-  roundOrder = shuffle(decades.map((_,i)=>i)).slice(0, MAX_ROUNDS);
+  // Globale Reihenfolge von GENAU 8 Dekaden (ohne Wiederholung), in CHRONO-Basis
+  DECADE_INDEX_BY_KEY = Object.fromEntries(decades.map((d, i) => [d.key, i]));
+  const allIdx = CHRONO_KEYS.map(k => DECADE_INDEX_BY_KEY[k]); // 8 Indizes
+  roundOrder = shuffle(allIdx.slice());
+  console.log('Rundenreihenfolge (keys):', roundOrder.map(i => decades[i].key).join(', '));
 
   // UI vorbereiten
   elStartMenu.classList.add('hidden');
@@ -510,7 +538,7 @@ function showSummary(){
   const data = players.map((name, i)=>({ name, score: scores[i] ?? 0 }));
   data.sort((a,b)=> b.score - a.score);
 
-  const totalRounds = roundOrder.length;
+  const totalRounds = roundOrder.length; // = 8
   elSummarySubtitle.textContent = `Nach Runde ${lastFinishedRoundNum} von ${totalRounds}`;
 
   elSummaryList.innerHTML = '';

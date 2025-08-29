@@ -1,16 +1,9 @@
 // ===========================
 // Rate die Dekade – Logik (komplette Datei)
 // ===========================
-console.log("Check Songs geladen:", {
-  songs50s: typeof window.songs50s,
-  songs60s: typeof window.songs60s,
-  songs70s: typeof window.songs70s,
-  songs80s: typeof window.songs80s,
-  songs90s: typeof window.songs90s,
-  songs00s: typeof window.songs00s || typeof window.songs2000s,
-  songs10s: typeof window.songs10s || typeof window.songs2010s,
-  songs20s: typeof window.songs20s || typeof window.songs2020s
-});
+console.log("SONG_DECADES registry:",
+  (window.SONG_DECADES || []).map(d => `${d.key}:${d.list?.length || 0}`)
+);
 
 // ---------- Audio ----------
 const mainAudio = document.getElementById('mainAudio');

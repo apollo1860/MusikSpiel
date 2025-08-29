@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs10s = [
+  { title: "Rolling In The Deep", artist: "Adele", year:2010, src: BASE_URL + "10s/rollinginthedeep_adele.mp3" },
+  { title: "Shape Of You", artist: "Ed Sheeran", year:2017, src: BASE_URL + "10s/shapeofyou_edsheeran.mp3" },
+  { title: "Uptown Funk", artist: "Bruno Mars, Mark Ronson", year:2014, src: BASE_URL + "10s/uptownfunk_brunomars-markronson.mp3" },
   { title: "Someone Like You", artist: "Adele", year: 2011, src: BASE_URL + "10s/someonelikeyou_adele.mp3" },
   { title: "Hello", artist: "Adele", year: 2015, src: BASE_URL + "10s/hello_adele.mp3" },
   { title: "We Found Love", artist: "Rihanna feat. Calvin Harris", year: 2011, src: BASE_URL + "10s/wefoundlove_rihanna.mp3" },

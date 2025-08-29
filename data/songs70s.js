@@ -1,3 +1,5 @@
+const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
+
 const songs70s = [
   { title: "Imagine", artist: "John Lennon", year: 1971, src: BASE_URL + "70s/imagine_johnlennon.mp3" },
   { title: "Let It Be", artist: "The Beatles", year: 1970, src: BASE_URL + "70s/letitbe_beatles.mp3" },

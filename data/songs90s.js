@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs90s = [
+  { title: "Baby One More Time", artist: "Britney Spears", year:1998, src: BASE_URL + "90s/babyonemoretime_britneyspears.mp3" },
+  { title: "Smells Like Teen Spirit", artist: "Nirvana", year: 1991, src: BASE_URL + "90s/smellsliketeenspirit_nirvana.mp3" },
+  { title: "Wonderwall", artist: "Oasis", year:1995, src: BASE_URL + "90s/wonderwall_oasis.mp3" },
   { title: "Losing My Religion", artist: "R.E.M.", year: 1991, src: BASE_URL + "90s/losingmyreligion_rem.mp3" },
   { title: "Everybody Hurts", artist: "R.E.M.", year: 1992, src: BASE_URL + "90s/everybodyhurts_rem.mp3" },
   { title: "Enter Sandman", artist: "Metallica", year: 1991, src: BASE_URL + "90s/entersandman_metallica.mp3" },

@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs20s = [
+  { title: "As It Was", artist: "Harry Styles", year:2022, src: BASE_URL + "20s/asitwas_harrystyles.mp3" },
+  { title: "Blinding Lights", artist: "The Weeknd", year:2019, src: BASE_URL + "20s/Blindinglights_theweeknd.mp3" },
+  { title: "Drivers License", artist: "Olivia Rodrigo", year:2021, src: BASE_URL + "20s/driverslicense_oliviarodrigo.mp3" },
   { title: "Levitating", artist: "Dua Lipa", year: 2020, src: BASE_URL + "20s/levitating_dualipa.mp3" },
   { title: "Don’t Start Now", artist: "Dua Lipa", year: 2020, src: BASE_URL + "20s/dontstartnow_dualipa.mp3" },
   { title: "Break My Heart", artist: "Dua Lipa", year: 2020, src: BASE_URL + "20s/breakmyheart_dualipa.mp3" },

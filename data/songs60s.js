@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs60s = [
+  { title: "Good Vibrations", artist: "The Beach Boys", year:1966, src: BASE_URL + "60s/goodvibrations_beachboys.mp3" },
+  { title: "Hey Jude", artist: "The Beatles", year:1968, src: BASE_URL + "60s/heyjude_thebeatles.mp3" },
+  { title: "Paint It Black", artist: "The Rolling Stones", year:1966, src: BASE_URL + "60s/Paintitblack_rollingstones.mp3" },
   { title: "I Want to Hold Your Hand", artist: "The Beatles", year: 1963, src: BASE_URL + "60s/iwanttoholdyourhand_beatles.mp3" },
   { title: "She Loves You", artist: "The Beatles", year: 1963, src: BASE_URL + "60s/shelovesyou_beatles.mp3" },
   { title: "Yesterday", artist: "The Beatles", year: 1965, src: BASE_URL + "60s/yesterday_beatles.mp3" },

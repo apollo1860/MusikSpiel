@@ -1,4 +1,4 @@
-// Einmalige globale Basis-URL (redeclaresafe)
+// Einmalige globale Basis-URL (redeclare-safe)
 window.BASE_URL ??= "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs60s = [
@@ -26,6 +26,7 @@ const songs60s = [
   { title: "Respect", artist: "Aretha Franklin", year: 1967, src: window.BASE_URL + "60s/respect_arethafranklin.mp3" },
   { title: "Think", artist: "Aretha Franklin", year: 1968, src: window.BASE_URL + "60s/think_arethafranklin.mp3" },
   { title: "Sittin’ On The Dock of the Bay", artist: "Otis Redding", year: 1968, src: window.BASE_URL + "60s/sittinonthedockofthebay_otisredding.mp3" },
+  // Bitte Dateiname prüfen: oft "mygirl_temptations.mp3"
   { title: "My Girl", artist: "The Temptations", year: 1964, src: window.BASE_URL + "60s/mygirl_temptation.mp3" }
 ];
 

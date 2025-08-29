@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs00s = [
+  { title: "Hey Ya!", artist: "Outkast", year: 2003, src: BASE_URL + "00s/heyya_outkast.mp3" },
+  { title: "In The End", artist: "Linkin Park", year: 2001, src: BASE_URL + "00s/intheend_linkinpark.mp3" },
+  { title: "Lose Yourself", artist: "Eminem", year: 2002, src: BASE_URL + "00s/loseyourself_eminem.mp3" },
   { title: "Boulevard of Broken Dreams", artist: "Green Day", year: 2004, src: BASE_URL + "00s/boulevardofbrokendreams_greenday.mp3" },
   { title: "American Idiot", artist: "Green Day", year: 2004, src: BASE_URL + "00s/americanidiot_greenday.mp3" },
   { title: "Crazy", artist: "Gnarls Barkley", year: 2006, src: BASE_URL + "00s/crazy_gnarlsbarkley.mp3" },

@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs50s = [
+  { title: "Jailhouse Rock", artist: "Elvis Presley", year:1957, src: BASE_URL + "50s/Jailhouserock_elvispresley.mp3" },
+  { title: "Johnny B. Goode", artist: "Chuck Berry", year:1958, src: BASE_URL + "50s/johnnybgoode_chuckberry.mp3" },
+  { title: "Rock Around The Clock", artist: "Bill Haley & His Comets", year: 1954, src: BASE_URL + "50s/rockaroundtheclock_billhaley.mp3" },
   { title: "Rock Around the Clock", artist: "Bill Haley & His Comets", year: 1954, src: BASE_URL + "50s/rockaroundtheclock_billhaley.mp3" },
   { title: "Heartbreak Hotel", artist: "Elvis Presley", year: 1956, src: BASE_URL + "50s/heartbreakhotel_elvispresley.mp3" },
   { title: "Hound Dog", artist: "Elvis Presley", year: 1956, src: BASE_URL + "50s/Hounddog_elvispresley.mp3" },

@@ -56,6 +56,13 @@ let lastFinishedRoundNum = 0;     // für Subtitle "Nach Runde X von Y"
 // pro DEKADE: bereits verwendete Songs (key = id||src) – keine Wiederholung in der gleichen Dekade im ganzen Spiel
 const usedByDecade = new Map();
 
+// In dieser Runde (roundIndex) und dieser Dekade (dec.key) bereits verwendete Jahre
+const usedYearsByRoundDecade = new Map();
+function roundDecadeKey(rIdx, decKey){ return `${rIdx}|${decKey}`; }
+
+// Optional: pro Runde bereits gespielte Songs (egal aus welcher Dekade)
+const usedSongsByRound = new Map();
+
 // Rick Overlay State (lauter als Hauptsong)
 let rickOverlayActive = false;
 let savedMainVol = 1;
@@ -267,18 +274,47 @@ function assignSongForCurrentTurn(){
     return;
   }
 
+  // 1) Keine exakten Song-Duplikate in der gleichen Dekade über das ganze Spiel
   const set = usedByDecade.get(dec.key) || new Set();
   const unused = list.filter(s => !set.has(songKey(s)));
-  const pool = unused.length ? unused : list; // Fallback, falls mehr Züge als Songs
-  const chosen = pool[Math.floor(Math.random()*pool.length)];
+  const poolBase = unused.length ? unused : list; // Fallback, falls mehr Züge als Songs
+
+  // 2) NEU: Innerhalb derselben Runde (roundIndex) und Dekade (dec.key) jedes Jahr nur einmal
+  const yKey = roundDecadeKey(roundIndex, dec.key);
+  let yearSet = usedYearsByRoundDecade.get(yKey);
+  if (!yearSet){
+    yearSet = new Set();
+    usedYearsByRoundDecade.set(yKey, yearSet);
+  }
+
+  // Kandidaten mit Jahr, das in dieser Runde/Dekade noch nicht vorkam
+  let candidates = poolBase.filter(s => typeof s.year === 'number' && !yearSet.has(s.year));
+
+  // Wenn alle Jahre schon belegt sind, sanft zurückfallen (Hauptsache: ein Song wird gefunden)
+  if (!candidates.length) candidates = poolBase;
+
+  // Optional: pro Runde keinen identischen Track
+let roundSet = usedSongsByRound.get(roundIndex);
+if (!roundSet){ roundSet = new Set(); usedSongsByRound.set(roundIndex, roundSet); }
+const noDupCandidates = candidates.filter(s => !roundSet.has(songKey(s)));
+if (noDupCandidates.length) candidates = noDupCandidates;
+
+  // Zufällig wählen
+  const chosen = candidates[Math.floor(Math.random()*candidates.length)];
+
+  roundSet.add(songKey(chosen));
+
+  // Buchhaltung aktualisieren
   set.add(songKey(chosen));
   usedByDecade.set(dec.key, set);
+  if (typeof chosen.year === 'number') yearSet.add(chosen.year);
 
   currentSong = chosen;
   mainAudio.src = chosen.src;
   setPreservePitch(mainAudio, true);
   mainAudio.playbackRate = 1;
 }
+
 
 // Scrabble-Style FX
 function showFx(label){

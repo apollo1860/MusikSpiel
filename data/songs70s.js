@@ -1,6 +1,9 @@
 const BASE_URL = "https://pub-3910a02fcd5042f5bb1910363e89357c.r2.dev/";
 
 const songs70s = [
+  { title: "Bohemian Rhapsody", artist: "Queen", year:1975, src: BASE_URL + "70s/bohemianrhapsody_queen.mp3" },
+  { title: "Dancing Queen", artist: "ABBA", year:1976, src: BASE_URL + "70s/dancingqueen_abba.mp3" },
+  { title: "Stayin Alive", artist: "Bee Gees", year:1977, src: BASE_URL + "70s/stayinalive_beegees.mp3" },
   { title: "Imagine", artist: "John Lennon", year: 1971, src: BASE_URL + "70s/imagine_johnlennon.mp3" },
   { title: "Let It Be", artist: "The Beatles", year: 1970, src: BASE_URL + "70s/letitbe_beatles.mp3" },
   { title: "Bridge Over Troubled Water", artist: "Simon & Garfunkel", year: 1970, src: BASE_URL + "70s/bridgeovertroubledwater_simongarfunkel.mp3" }, // fehlt im Ordner

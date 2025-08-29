@@ -288,7 +288,7 @@ function updateRoundAndTurnLabels() {
 }
 
 function assignSongForCurrentTurn(){
-  const dec = getDecadeForTurn(currentPlayerIndex, roundIndex);
+const dec = getActiveDecade();
   if (!dec){ currentSong = null; return; }
   const list = dec.list || [];
   if (!list.length){
@@ -492,6 +492,11 @@ elStartGame.addEventListener('click', () => {
 
   players = names;
   scores = new Array(players.length).fill(0);
+
+  // WICHTIG: Historie für neues Spiel zurücksetzen
+usedByDecade.clear();
+usedYearsByRoundDecade.clear();
+usedSongsByRound.clear();
 
   // Globale Reihenfolge von GENAU 8 Dekaden (ohne Wiederholung), in CHRONO-Basis
   DECADE_INDEX_BY_KEY = Object.fromEntries(decades.map((d, i) => [d.key, i]));
